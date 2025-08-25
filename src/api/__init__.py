@@ -1,0 +1,9 @@
+from fastapi import APIRouter
+router = APIRouter()
+
+from . import admin, register, good, message
+
+
+
+
+

@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "src"
+version = "0.1.0"
+description = ""
+authors = [ "soroushrasti"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.108.0"
+uvicorn = "^0.25.0"
+pytest = "^7.4.4"
+pydantic-settings = "^2.1.0"
+requests = "^2.31.0"
+sqlalchemy = "^2.0.25"
+psycopg2-binary = "^2.9.9"
+httpx = "^0.26.0"
+pyjwt = {extras = ["crypto"], version = "^2.10.1"}
+alembic = "^1.16.1"
+pydantic = {extras = ["email"], version = "^2.11.7"}
+bcrypt = "^4.3.0"
+sqlalchemy-pydantic = "^0.0.7"
+sqlalchemy-to-pydantic = "^0.0.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+start = "src.main:app"
