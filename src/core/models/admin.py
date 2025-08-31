@@ -32,9 +32,11 @@ class Admin(Base):
     Password: Mapped[str] = mapped_column(String(128), nullable=False)
     CreatedDate: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     UpdatedDate: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    Latitude: Mapped[Optional[str]] = mapped_column(Text)
+    Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
     ### create __init__ method to create an admin
-    def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str, NationalID: str, UserRole: UserRoleEnum, Password: str, PostCode: str = None):
+    def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str, NationalID: str, UserRole: UserRoleEnum, Password: str, PostCode: str = None, Latitude: str = None, Longitude: str = None):
         self.PostCode = PostCode
         self.FirstName = FirstName
         self.LastName = LastName
@@ -46,6 +48,8 @@ class Admin(Base):
         self.NationalID = NationalID
         self.UserRole = UserRole
         self.Password = set_password(Password)
+        self.Latitude = Latitude
+        self.Longitude = Longitude
 
     ### create admin
     def create_admin(self, db_session):

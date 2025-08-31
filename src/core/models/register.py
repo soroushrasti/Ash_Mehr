@@ -21,7 +21,6 @@ class Register(Base):
     NameFather: Mapped[Optional[str]] = mapped_column()
     NationalID: Mapped[Optional[str]] = mapped_column()
     CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"))
-    MessageID: Mapped[Optional[int]] = mapped_column(ForeignKey("message.MessageID"))
     Age: Mapped[Optional[int]] = mapped_column()
     Region: Mapped[Optional[str]] = mapped_column()
     Gender: Mapped[Optional[str]] = mapped_column()
@@ -34,8 +33,13 @@ class Register(Base):
     UpdatedDate: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
     IncomeForm: Mapped[Optional[str]] = mapped_column(Text)
     children_of_reg: Mapped[List["ChildrenOfRegister"]] = relationship("ChildrenOfRegister", back_populates="register")
+    Latitude: Mapped[Optional[str]] = mapped_column(Text)
+    Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
-    def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str, NameFather: str, NationalID: str, CreatedBy: int, MessageID: int, Age: int, Region:str, Gender: str, HusbandFirstName: str,HusbandLastName: str, ReasonMissingHusband : str, UnderOrganizationName: str, EducationLevel: str, IncomeForm: str ):
+    def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str,
+                 NameFather: str, NationalID: str, CreatedBy: int, Age: int, Region:str, Gender: str,
+                 HusbandFirstName: str,HusbandLastName: str, ReasonMissingHusband : str, UnderOrganizationName: str,
+                 EducationLevel: str, IncomeForm: str, Latitude: str = None, Longitude: str = None):
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -45,7 +49,6 @@ class Register(Base):
         self.Street = Street
         self.NationalID = NationalID
         self.CreatedBy = CreatedBy
-        self.MessageID = MessageID
         self.Age = Age
         self.Region = Region
         self.Gender = Gender
@@ -55,6 +58,9 @@ class Register(Base):
         self.UnderOrganizationName = UnderOrganizationName
         self.EducationLevel = EducationLevel
         self.IncomeForm = IncomeForm
+        self.Latitude = Latitude
+        self.Longitude = Longitude
+        self.NameFather = NameFather
 
     def create_register(self, db_session):
         db_session.add(self)
