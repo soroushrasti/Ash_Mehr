@@ -60,4 +60,36 @@ class Admin(Base):
         db_session.commit()
         return self
 
+    ## edit admin
+    def edit_admin(self, db_session, user_data):
+        if user_data.FirstName:
+            self.FirstName = user_data.FirstName
+        if user_data.LastName:
+            self.LastName = user_data.LastName
+        if user_data.Phone:
+            self.Phone = user_data.Phone
+        if user_data.Email:
+            self.Email = user_data.Email
+        if user_data.City:
+            self.City = user_data.City
+        if user_data.Province:
+            self.Province = user_data.Province
+        if user_data.Street:
+            self.Street = user_data.Street
+        if user_data.NationalID:
+            self.NationalID = user_data.NationalID
+        if user_data.UserRole:
+            self.UserRole = user_data.UserRole
+        if user_data.Password:
+            self.Password = user_data.Password
+        if user_data.PostCode:
+            self.PostCode = user_data.PostCode
+        if user_data.CreatedDate:
+            self.CreatedDate = user_data.CreatedDate
+        if user_data.UpdatedDate:
+            self.UpdatedDate = user_data.UpdatedDate
+        db_session.commit()
+        db_session.refresh(self)
+        return self
+
 AdminCreate = sqlalchemy_model_to_pydantic(Admin, exclude=['AdminID', 'CreatedDate', 'UpdatedDate'])
