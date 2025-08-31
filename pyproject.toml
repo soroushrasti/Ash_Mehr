@@ -21,6 +21,8 @@ pydantic = {extras = ["email"], version = "^2.11.7"}
 bcrypt = "^4.3.0"
 sqlalchemy-pydantic = "^0.0.7"
 sqlalchemy-to-pydantic = "^0.0.8"
+typer = "^0.17.3"
+sqlalchemy-utils = "^0.42.0"
 
 
 [build-system]

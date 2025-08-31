@@ -1,7 +1,8 @@
 from typing import Optional, Type
 from pydantic import create_model
 from sqlalchemy.orm import DeclarativeMeta
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from src.config.database import engine
 
 Base = declarative_base()
 
