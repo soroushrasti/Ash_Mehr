@@ -36,18 +36,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('AdminID')
     )
     op.create_index(op.f('ix_admin_AdminID'), 'admin', ['AdminID'], unique=False)
-    op.create_table('message',
-    sa.Column('MessageID', sa.Integer(), nullable=False),
-    sa.Column('MessageText', sa.Text(), nullable=True),
-    sa.Column('CreatedDate', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
-    sa.Column('UpdatedDate', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('CreatedBy', sa.Integer(), nullable=True),
-    sa.Column('GivenToWhome', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['CreatedBy'], ['admin.AdminID'], ),
-    sa.ForeignKeyConstraint(['GivenToWhome'], ['register.RegisterID'], ),
-    sa.PrimaryKeyConstraint('MessageID')
-    )
-    op.create_index(op.f('ix_message_MessageID'), 'message', ['MessageID'], unique=False)
+
     op.create_table('register',
     sa.Column('RegisterID', sa.Integer(), nullable=False),
     sa.Column('FirstName', sa.String(), nullable=False),
@@ -106,7 +95,19 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_good_GoodID'), 'good', ['GoodID'], unique=False)
     op.create_index(op.f('ix_good_TypeGood'), 'good', ['TypeGood'], unique=False)
-    # ### end Alembic commands ###
+    op.create_table('message',
+                    sa.Column('MessageID', sa.Integer(), nullable=False),
+                    sa.Column('MessageText', sa.Text(), nullable=True),
+                    sa.Column('CreatedDate', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'),
+                              nullable=True),
+                    sa.Column('UpdatedDate', sa.DateTime(timezone=True), nullable=True),
+                    sa.Column('CreatedBy', sa.Integer(), nullable=True),
+                    sa.Column('GivenToWhome', sa.Integer(), nullable=True),
+                    sa.ForeignKeyConstraint(['CreatedBy'], ['admin.AdminID'], ),
+                    sa.ForeignKeyConstraint(['GivenToWhome'], ['register.RegisterID'], ),
+                    sa.PrimaryKeyConstraint('MessageID')
+                    )
+    op.create_index(op.f('ix_message_MessageID'), 'message', ['MessageID'], unique=False)
 
 
 def downgrade() -> None:
