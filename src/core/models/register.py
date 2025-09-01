@@ -39,7 +39,7 @@ class Register(Base):
     def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str,
                  NameFather: str, NationalID: str, CreatedBy: int, Age: int, Region:str, Gender: str,
                  HusbandFirstName: str,HusbandLastName: str, ReasonMissingHusband : str, UnderOrganizationName: str,
-                 EducationLevel: str, IncomeForm: str, Latitude: str = None, Longitude: str = None):
+                 EducationLevel: str, IncomeForm: str, Latitude: str = None, Longitude: str = None, children_of_registre: dict = {}):
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -61,6 +61,7 @@ class Register(Base):
         self.Latitude = Latitude
         self.Longitude = Longitude
         self.NameFather = NameFather
+        self.children_of_reg = [ChildrenOfRegisterCreate(**child) for child in children_of_registre] if children_of_registre else []
 
     def create_register(self, db_session):
         db_session.add(self)
