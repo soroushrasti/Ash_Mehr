@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
+import bcrypt
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -95,5 +96,13 @@ class Admin(Base):
         db_session.commit()
         db_session.refresh(self)
         return self
+
+    def login_admin(self, db_session, email, password):
+        admin = db_session.query(Admin).filter(Admin.email == email).first()
+        checkpassword = bcrypt.checkpw(password.encode('utf-8'), admin.Password.encode('utf-8'))
+        if admin and checkpassword:
+            return admin
+        return None
+
 
 AdminCreate = sqlalchemy_model_to_pydantic(Admin, exclude=['AdminID', 'CreatedDate', 'UpdatedDate'])
