@@ -18,9 +18,21 @@ app = FastAPI()
 app.add_middleware(LoggingMiddleware)
 
 # Optionally enable CORS for frontend integration
+# NOTE: Using explicit origins because allow_credentials=True cannot be used with "*"
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:8081").split(",")
+    if origin.strip()
+]
+# Also allow typical Android/Expo LAN origins (localhost, emulator, and 192.168.x.x) via regex
+allowed_origin_regex = os.getenv(
+    "CORS_ALLOW_ORIGIN_REGEX",
+    r"https?://(localhost|127\\.0\\.0\\.1|10\\.0\\.2\\.2|192\\.168\\.\\d{1,3}\\.\\d{1,3})(:\\d+)?",
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

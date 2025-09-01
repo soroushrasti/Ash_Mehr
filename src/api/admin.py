@@ -33,4 +33,4 @@ def edit_admin(
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     else:
-        return admin.edit_admin(db, user_data)
+        return admin.edit_admin(db_session=db, user_data=user_data)
