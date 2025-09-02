@@ -65,4 +65,7 @@ if __name__ == "__main__":
 
     typer.echo("Starting the app")
     import uvicorn
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run("src.main:app",
+                host=settings.HOST,
+                port=settings.PORT,
+                reload=False)

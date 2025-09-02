@@ -6,6 +6,6 @@ export PYTHONPATH="/app:$PYTHONPATH"
 echo "Running database migrations..."
 poetry run alembic upgrade head
 
-# Start the application
+# Start the application (binds to HOST/PORT from env inside src/main.py)
 echo "Starting the application..."
-poetry run python src/main.py
+exec poetry run python src/main.py
