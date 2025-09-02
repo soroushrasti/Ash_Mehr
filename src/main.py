@@ -4,6 +4,7 @@ import importlib
 import typer
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from src.config.base import BaseConfig
 
 from src.api import router
 from src.core.api_utils import print_all_api_info
@@ -12,6 +13,8 @@ from sqlalchemy_utils.functions import database_exists, create_database, drop_da
 from src.config.database import engine
 from src.core.models import Base  # Ensure all models are imported
 app = FastAPI()
+settings = BaseConfig()
+
 
 
 # Add logging middleware first (order matters)
