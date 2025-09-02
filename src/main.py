@@ -41,6 +41,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def index():
+    return 'Hello'
+
 app.include_router(router)
 
 # Generate and print all API paths and request payloads
