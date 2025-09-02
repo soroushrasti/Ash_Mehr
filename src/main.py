@@ -21,13 +21,16 @@ app.add_middleware(LoggingMiddleware)
 # NOTE: Using explicit origins because allow_credentials=True cannot be used with "*"
 allowed_origins = [
     origin.strip()
-    for origin in os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:8081").split(",")
+    for origin in os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:8081,http://localhost:19006,http://127.0.0.1:8081,http://127.0.0.1:19006",
+    ).split(",")
     if origin.strip()
 ]
-# Also allow typical Android/Expo LAN origins (localhost, emulator, and 192.168.x.x) via regex
+# Also allow typical Android/Expo LAN origins (localhost, emulator, and common LAN ranges) via regex
 allowed_origin_regex = os.getenv(
     "CORS_ALLOW_ORIGIN_REGEX",
-    r"https?://(localhost|127\\.0\\.0\\.1|10\\.0\\.2\\.2|192\\.168\\.\\d{1,3}\\.\\d{1,3})(:\\d+)?",
+    r"https?://(localhost|127\\.0\\.0\\.1|10\\.0\\.2\\.2|10\\.0\\.3\\.2|192\\.168\\.\\d{1,3}\\.\\d{1,3}|172\\.(1[6-9]|2[0-9]|3[0-1])\\.\\d{1,3}\\.\\d{1,3})(:\\d+)?",
 )
 app.add_middleware(
     CORSMiddleware,
