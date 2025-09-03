@@ -1,15 +1,12 @@
 from datetime import datetime
 from enum import StrEnum
 
-import bcrypt
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import String, DateTime, Enum, Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from src.core.models import Base, sqlalchemy_model_to_pydantic, sqlalchemy_model_to_pydantic_named
-from pydantic import create_model
 from typing import Optional
 
-from src.core.util import set_password
 
 
 class UserRoleEnum(StrEnum):
@@ -36,7 +33,6 @@ class Admin(Base):
     Latitude: Mapped[Optional[str]] = mapped_column(Text)
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
-    ### create __init__ method to create an admin
     def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str, NationalID: str, UserRole: UserRoleEnum, Password: str, PostCode: str = None, Latitude: str = None, Longitude: str = None):
         self.PostCode = PostCode
         self.FirstName = FirstName
@@ -48,25 +44,22 @@ class Admin(Base):
         self.Street = Street
         self.NationalID = NationalID
         self.UserRole = UserRole
-        self.Password = set_password(Password)
+        self.Password = Password
         self.Latitude = Latitude
         self.Longitude = Longitude
 
-    ### create admin
     def create_admin(self, db_session):
         db_session.add(self)
         db_session.commit()
         db_session.refresh(self)
         return self
 
-    ## delete admin
     def delete_admin(self, db_session):
         db_session.delete(self)
         db_session.commit()
         return self
 
-    ## edit admin
-    def edit_admin(self, db_session, user_data):
+    def edit_admin(self, db_session, user_data: 'AdminCreate'):
         if user_data.FirstName:
             self.FirstName = user_data.FirstName
         if user_data.LastName:
@@ -93,29 +86,13 @@ class Admin(Base):
             self.CreatedDate = user_data.CreatedDate
         if user_data.UpdatedDate:
             self.UpdatedDate = user_data.UpdatedDate
+        if user_data.Latitude:
+            self.Latitude = user_data.Latitude
+        if user_data.Longitude:
+            self.Longitude = user_data.Longitude
         db_session.commit()
         db_session.refresh(self)
         return self
 
-    def info_admin(self, db_session):
-        total_admin = db_session.query(Admin).filter(Admin.UserRole == UserRoleEnum.Admin).count()
-        total_group_admin = db_session.query(Admin).filter(Admin.UserRole == UserRoleEnum.GroupAdmin).count()
-        last_admin = db_session.query(Admin).order_by(Admin.CreatedDate.desc()).first()
-        return {
-            "total_admin": total_admin,
-            "total_group_admin": total_group_admin,
-            "last_admin": {
-                last_admin.FirstName,
-                last_admin.LastName,
-                last_admin.CreatedDate,
-            } if last_admin else None
-        }
-
-    def find_admin(self, db_session):
-        result_list = db_session.query(Admin).filter(Admin.Latitude.isnot(None), Admin.Longitude.isnot(None)).all()
-        needy_list = [(row.AdminID, row.Latitude, row.Longitude, row.FirstName, row.LastName, row.City, row.Street) for row in result_list]
-        return needy_list
-
 AdminCreate = sqlalchemy_model_to_pydantic(Admin, exclude=['AdminID', 'CreatedDate', 'UpdatedDate'])
-# New response model excluding sensitive Password
 AdminOut = sqlalchemy_model_to_pydantic_named(Admin, "AdminOut", exclude=["Password"])
