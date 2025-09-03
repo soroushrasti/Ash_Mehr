@@ -4,7 +4,7 @@ from enum import StrEnum
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
-from src.core.models import Base, sqlalchemy_model_to_pydantic
+from src.core.models import Base, sqlalchemy_model_to_pydantic, sqlalchemy_model_to_pydantic_named
 from pydantic import create_model
 from typing import Optional
 
@@ -97,3 +97,5 @@ class Admin(Base):
         return self
 
 AdminCreate = sqlalchemy_model_to_pydantic(Admin, exclude=['AdminID', 'CreatedDate', 'UpdatedDate'])
+# New response model excluding sensitive Password
+AdminOut = sqlalchemy_model_to_pydantic_named(Admin, "AdminOut", exclude=["Password"])
