@@ -6,6 +6,7 @@ from sqlalchemy import func, literal
 from src.api import router
 from src.config.database import create_session
 from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
+from sqlalchemy import func, literal, case, cast, Float
 
 
 class MapPoint(BaseModel):

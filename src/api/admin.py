@@ -8,6 +8,7 @@ from sqlalchemy import func, literal, case
 from src.api import router
 from src.config.database import create_session
 from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
+from sqlalchemy import func, literal, case, cast, Float
 
 
 class AdminLogin(BaseModel):
@@ -83,22 +84,37 @@ def info_admin_stats(
         .one()
     )
 
-    last = (
+    last_admin = (
         db.query(Admin.FirstName, Admin.LastName, Admin.CreatedDate)
         .order_by(Admin.CreatedDate.desc())
+        .filter(Admin.UserRole == UserRoleEnum.Admin)
         .limit(1)
         .first()
     )
 
-    last_name = (
-        " ".join([v for v in [last.FirstName, last.LastName] if v]).strip() if last else None
+    last_group_admin = (
+        db.query(Admin.FirstName, Admin.LastName, Admin.CreatedDate)
+        .order_by(Admin.CreatedDate.desc())
+        .filter(Admin.UserRole == UserRoleEnum.GroupAdmin)
+        .limit(1)
+        .first()
+    )
+
+    last_name_admin = (
+        " ".join([v for v in [last_admin.FirstName, last_admin.LastName] if v]).strip() if last_admin else None
+    )
+
+    last_name_group_admin = (
+        " ".join([v for v in [last_group_admin.FirstName, last_group_admin.LastName] if v]).strip() if last_group_admin else None
     )
 
     return {
         "numberGroupAdminPersons": counts.numberGroupAdminPersons or 0,
         "numberAdminPersons": counts.numberAdminPersons or 0,
-        "LastAdmincreatedTime": last.CreatedDate if last else None,
-        "LastAdminNameCreated": last_name or None,
+        "LastAdminCreatedTime": last_admin.CreatedDate if last_admin else None,
+        "LastAdminNameCreated": last_name_admin or None,
+        "LastGroupAdminCreatedTime": last_group_admin.CreatedDate if last_group_admin else None,
+        "LastGroupAdminNameCreated": last_name_group_admin or None,
     }
 
 @router.get("/admins", status_code=200, response_model=List[AdminOut])
