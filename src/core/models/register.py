@@ -50,10 +50,10 @@ class Register(Base):
     Latitude: Mapped[Optional[str]] = mapped_column(Text)
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
-    def __init__(self, FirstName: str, LastName: str, Phone: str, Email: str, City: str, Province: str, Street: str,
-                 NameFather: str, NationalID: str, CreatedBy: int, Age: int, Region:str, Gender: str,
-                 HusbandFirstName: str,HusbandLastName: str, ReasonMissingHusband : str, UnderOrganizationName: str,
-                 EducationLevel: str, IncomeForm: str, Latitude: str = None, Longitude: str = None, children_of_registre: dict = {}):
+    def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
+                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, Age: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
+                 HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
+                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, children_of_registre: Optional[list[dict]] = None):
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -75,7 +75,7 @@ class Register(Base):
         self.Latitude = Latitude
         self.Longitude = Longitude
         self.NameFather = NameFather
-        self.children_of_reg = [ChildrenOfRegisterCreate(**child) for child in children_of_registre] if children_of_registre else []
+        self.children_of_reg = [ChildrenOfRegisterCreate(**child) for child in (children_of_registre or [])]
 
     def create_register(self, db_session):
         db_session.add(self)
@@ -91,48 +91,58 @@ class Register(Base):
         return self
 
     def edit_register(self, db_session, user_data):
-        if user_data.FirstName:
+        if user_data.FirstName is not None:
             self.FirstName = user_data.FirstName
-        if user_data.LastName:
+        if user_data.LastName is not None:
             self.LastName = user_data.LastName
-        if user_data.Phone:
+        if user_data.Phone is not None:
             self.Phone = user_data.Phone
-        if user_data.Email:
+        if user_data.Email is not None:
             self.Email = user_data.Email
-        if user_data.City:
+        if user_data.City is not None:
             self.City = user_data.City
-        if user_data.Province:
+        if user_data.Province is not None:
             self.Province = user_data.Province
-        if user_data.Street:
+        if user_data.Street is not None:
             self.Street = user_data.Street
-        if user_data.NationalID:
+        if user_data.NationalID is not None:
             self.NationalID = user_data.NationalID
-        if user_data.CreatedBy:
+        if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
-        if user_data.MessageID:
+        if getattr(user_data, 'MessageID', None) is not None:
             self.MessageID = user_data.MessageID
-        if user_data.Age:
+        if user_data.Age is not None:
             self.Age = user_data.Age
-        if user_data.Region:
+        if user_data.Region is not None:
             self.Region = user_data.Region
-        if user_data.Gender:
+        if user_data.Gender is not None:
             self.Gender = user_data.Gender
-        if user_data.HusbandFirstName:
+        if user_data.HusbandFirstName is not None:
             self.HusbandFirstName = user_data.HusbandFirstName
-        if user_data.HusbandLastName:
+        if user_data.HusbandLastName is not None:
             self.HusbandLastName = user_data.HusbandLastName
-        if user_data.ReasonMissingHusband:
+        if user_data.ReasonMissingHusband is not None:
             self.ReasonMissingHusband = user_data.ReasonMissingHusband
-        if user_data.UnderOrganizationName:
+        if user_data.UnderOrganizationName is not None:
             self.UnderOrganizationName = user_data.UnderOrganizationName
-        if user_data.EducationLevel:
+        if user_data.EducationLevel is not None:
             self.EducationLevel = user_data.EducationLevel
-        if user_data.CreatedDate:
+        if user_data.CreatedDate is not None:
             self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate:
+        if user_data.UpdatedDate is not None:
             self.UpdatedDate = user_data.UpdatedDate
-        if user_data.IncomeForm:
+        if user_data.IncomeForm is not None:
             self.IncomeForm = user_data.IncomeForm
+        if user_data.Province is not None:
+            self.Province = user_data.Province
+        if user_data.NameFather is not None:
+            self.NameFather = user_data.NameFather
+        if user_data.Latitude is not None:
+            self.Latitude = user_data.Latitude
+        if user_data.Longitude is not None:
+            self.Longitude = user_data.Longitude
+        db_session.commit()
+        return self
 
 
     def delete_register(self, db_session, register_id):
@@ -227,7 +237,7 @@ class ChildrenOfRegister(Base):
     UpdatedDate: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
     register: Mapped[Register] = relationship("Register", back_populates="children_of_reg")
 
-    def __init__(self, RegisterID: int, Age: int, Gender: str, NationalID: int, FirstName: str, LastName: str, EducationLevel: str ):
+    def __init__(self, RegisterID: Optional[int] = None, Age: Optional[int] = None, Gender: Optional[str] = None, NationalID: Optional[int] = None, FirstName: Optional[str] = None, LastName: Optional[str] = None, EducationLevel: Optional[str] = None ):
         self.RegisterID = RegisterID
         self.Age = Age
         self.Gender = Gender
@@ -245,4 +255,3 @@ RegisterCreateWithChildren = create_model(
     __base__=RegisterCreate,
     children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None)
 )
-

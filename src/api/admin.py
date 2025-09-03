@@ -25,10 +25,11 @@ class MapPoint(BaseModel):
 
 @router.post("/signup-admin", status_code=201, response_model=AdminOut)
 def signup_admin(
-        user_data: AdminCreate = Body(...),
+        user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    admin: Admin = Admin(**user_data.dict())
+    payload = user_data.dict() if user_data else {}
+    admin: Admin = Admin(**payload)
     return admin.create_admin(db)
 
 ## delete admin
@@ -45,25 +46,27 @@ def delete_admin(
 @router.post("/edit-admin/{admin_id}", response_model=AdminOut)
 def edit_admin(
         admin_id: int,
-        user_data: AdminCreate = Body(...),
+        user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
     admin :Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     else:
-        return admin.edit_admin(db_session=db, user_data=user_data)
+        return admin.edit_admin(db_session=db, user_data=user_data or AdminCreate())
 
 @router.post("/login", status_code=200)
 def login_admin(
-        user_data: AdminLogin = Body(...),
+        user_data: AdminLogin | None = Body(None),
         db: Session = Depends(create_session)
 ):
+    if not user_data or not user_data.Username:
+        raise HTTPException(status_code=401, detail="شماره همراه اشتباه است")
     admin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Username).first()
     if not admin:
         ## error in farsi
         raise HTTPException(status_code=401, detail="شماره همراه اشتباه است")
-    if user_data.Password != admin.Password:
+    if not user_data.Password or user_data.Password != admin.Password:
         raise HTTPException(status_code=401, detail="رمز عبور اشتباه است")
     name = f"{admin.FirstName or ''} {admin.LastName or ''}".strip() or None
     return {

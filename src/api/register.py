@@ -18,24 +18,25 @@ class MapPoint(BaseModel):
 
 @router.post("/signup-register", status_code=201)
 def signup_register(
-        user_data: RegisterCreateWithChildren = Body(...),
+        user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    register = Register(**user_data.dict())
+    payload = user_data.dict() if user_data else {}
+    register = Register(**payload)
     return register.create_register(db)
 
 
 @router.post("/edit-register/{register_id}")
 def edit_register(
         register_id: int,
-        user_data: RegisterCreate = Body(...),
+        user_data: RegisterCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
     register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="Register not found")
     else:
-        return register.edit_register(db, user_data)
+        return register.edit_register(db, user_data or RegisterCreate())
 
 @router.delete("/delete-register/{register_id}", status_code=200)
 def delete_register(

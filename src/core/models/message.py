@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.sql import func
 from src.core.models import Base, sqlalchemy_model_to_pydantic
+from typing import Optional
 
 
 class Message(Base):
@@ -15,7 +16,7 @@ class Message(Base):
     GivenToWhome = Column(Integer, ForeignKey("register.RegisterID"))
 
     ### create __init__ method to create an message
-    def __init__(self, MessageText, CreatedBy, GivenToWhome):
+    def __init__(self, MessageText: Optional[str] = None, CreatedBy: Optional[int] = None, GivenToWhome: Optional[int] = None):
         self.MessageText = MessageText
         self.CreatedBy = CreatedBy
         self.GivenToWhome = GivenToWhome
@@ -27,15 +28,15 @@ class Message(Base):
         return self
 
     def edit_message(self, db_session, user_data):
-        if user_data.MessageText:
+        if user_data.MessageText is not None:
             self.MessageText = user_data.MessageText
-        if user_data.CreatedDate:
+        if getattr(user_data, 'CreatedDate', None) is not None:
             self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate:
+        if getattr(user_data, 'UpdatedDate', None) is not None:
             self.UpdatedDate = user_data.UpdatedDate
-        if user_data.CreatedBy:
+        if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
-        if user_data.GivenToWhome:
+        if user_data.GivenToWhome is not None:
             self.GivenToWhome = user_data.GivenToWhome
         db_session.commit()
         return self
