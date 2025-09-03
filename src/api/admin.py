@@ -135,12 +135,14 @@ def find_admin(
         ),
         "",
     ).label("info")
+    lat_expr = cast(func.trim(Admin.Latitude), Float).label("lat")
+    lng_expr = cast(func.trim(Admin.Longitude), Float).label("lng")
 
     query = (
         db.query(
             Admin.AdminID.label("id"),
-            Admin.Latitude.label("lat"),
-            Admin.Longitude.label("lng"),
+            lat_expr,
+            lng_expr,
             name_expr,
             info_expr,
         )

@@ -73,12 +73,14 @@ def find_needy(
         ),
         "",
     ).label("info")
+    lat_expr = cast(func.trim(Register.Latitude), Float).label("lat")
+    lng_expr = cast(func.trim(Register.Longitude), Float).label("lng")
 
     query = (
         db.query(
             Register.RegisterID.label("id"),
-            Register.Latitude.label("lat"),
-            Register.Longitude.label("lng"),
+            lat_expr,
+            lng_expr,
             name_expr,
             info_expr,
         )
