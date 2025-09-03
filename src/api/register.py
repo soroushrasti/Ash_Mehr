@@ -133,3 +133,10 @@ def info_needy(
         "LastNeedycreatedTime": top.CreatedDate,
         "LastNeedyNameCreated": name,
     }
+
+@router.post("/find-needy", status_code=200)
+def find_needy(
+        user_data: Register = Body(...),
+        db: Session = Depends(create_session)
+):
+    return  user_data.find_needy(db)

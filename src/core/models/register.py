@@ -154,24 +154,7 @@ class Register(Base):
         db_session.commit()
         return self
 
-    def info_needy(self, db_session):
-        total_needy = db_session.query(Register).count()
-        last_needy = db_session.query(Register).order_by(Register.CreatedDate.desc()).first()
-        return {
-            "total_needy": total_needy,
-            "last_needy": {
-                last_needy.FirstName,
-                last_needy.LastName,
-                last_needy.CreatedDate,
-            } if last_needy else None
-        }
-
     def find_needy(self, db_session):
-        result_list: Register = db_session.query(Register).filter(Register.Latitude.isnot(None), Register.Longitude.isnot(None)).all()
-        needy_list = [(row.RegisterID, row.Latitude, row.Longitude, row.FirstName, row.LastName, row.City, row.Street) for row in result_list]
-        return needy_list
-
-    def find_register(self, db_session):
         query = db_session.query(Register)
         if self.FirstName:
             query = query.filter(Register.FirstName == self.FirstName)
