@@ -3,16 +3,15 @@ from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from sqlalchemy import func, literal, case
+from sqlalchemy import func, literal, case, cast, Float
 
 from src.api import router
 from src.config.database import create_session
 from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
-from sqlalchemy import func, literal, case, cast, Float
 
 
 class AdminLogin(BaseModel):
-    Email: EmailStr
+    Username: str
     Password: str
 
 # Map point response model for location endpoints
@@ -29,7 +28,7 @@ def signup_admin(
         user_data: AdminCreate = Body(...),
         db: Session = Depends(create_session)
 ):
-    admin = Admin(**user_data.dict())
+    admin: Admin = Admin(**user_data.dict())
     return admin.create_admin(db)
 
 ## delete admin
@@ -38,7 +37,7 @@ def delete_admin(
         admin_id: int,
         db: Session = Depends(create_session)
 ):
-    admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
+    admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     return admin.delete_admin(db)
@@ -49,23 +48,29 @@ def edit_admin(
         user_data: AdminCreate = Body(...),
         db: Session = Depends(create_session)
 ):
-    admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
+    admin :Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     else:
         return admin.edit_admin(db_session=db, user_data=user_data)
 
-@router.post("/login", status_code=200, response_model=AdminOut)
+@router.post("/login", status_code=200)
 def login_admin(
         user_data: AdminLogin = Body(...),
         db: Session = Depends(create_session)
 ):
-    admin = db.query(Admin).filter(Admin.Email == user_data.Email).first()
+    admin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Username).first()
     if not admin:
-        raise HTTPException(status_code=401, detail="Invalid admin")
-    if not bcrypt.checkpw(user_data.Password.encode("utf-8"), admin.Password.encode("utf-8")):
-        raise HTTPException(status_code=401, detail="Invalid password")
-    return admin
+        ## error in farsi
+        raise HTTPException(status_code=401, detail="شماره همراه اشتباه است")
+    if user_data.Password != admin.Password:
+        raise HTTPException(status_code=401, detail="رمز عبور اشتباه است")
+    name = f"{admin.FirstName or ''} {admin.LastName or ''}".strip() or None
+    return {
+        "adminID": admin.AdminID,
+        "name": name,
+        "userRole": admin.UserRole,
+    }
 
 
 @router.get("/info-admin")

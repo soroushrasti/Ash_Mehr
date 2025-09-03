@@ -2,11 +2,10 @@ from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
-from sqlalchemy import func, literal
+from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
-from sqlalchemy import func, literal, case, cast, Float
 
 
 class MapPoint(BaseModel):
@@ -74,6 +73,7 @@ def find_needy(
         ),
         "",
     ).label("info")
+
     lat_expr = cast(func.trim(Register.Latitude), Float).label("lat")
     lng_expr = cast(func.trim(Register.Longitude), Float).label("lng")
 
@@ -101,7 +101,6 @@ def find_needy(
         )
 
     rows = db.execute(query.statement).mappings().all()
-    # rows is a list of dict-like mappings: {id, lat, lng, name, info}
     return rows
 
 @router.get("/info-needy")
