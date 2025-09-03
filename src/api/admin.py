@@ -55,7 +55,7 @@ def edit_admin(
     else:
         return admin.edit_admin(db_session=db, user_data=user_data)
 
-@router.post("/login-admin", status_code=200, response_model=AdminOut)
+@router.post("/login", status_code=200, response_model=AdminOut)
 def login_admin(
         user_data: AdminLogin = Body(...),
         db: Session = Depends(create_session)
