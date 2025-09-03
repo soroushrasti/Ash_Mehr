@@ -1,10 +1,11 @@
+import bcrypt
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
 from src.api import router
 from src.config.database import create_session
-from src.core.models.admin import Admin, AdminCreate
+from src.core.models.admin import Admin, AdminCreate, UserRoleEnum
 
 
 @router.post("/signup-admin", status_code=201)
@@ -41,15 +42,27 @@ def login_admin(
         user_data: AdminCreate = Body(...),
         db: Session = Depends(create_session)
 ):
-    try:
         admin = db.query(Admin).filter(Admin.Email == user_data.Email).first()
         if not admin:
             raise HTTPException(status_code=401, detail="Invalid admin")
-        return admin.login_admin(db, user_data.Email, user_data.password)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error logging in: {str(e)}"
-        )
+        else:
+            checkpassword = bcrypt.checkpw(admin.Password.encode('utf-8'), user_data.Password.encode('utf-8'))
+            if not checkpassword:
+                raise HTTPException(status_code=401, detail="Invalid password")
+        return  admin
 
+
+@router.get("info_admin", status_code=200)
+def info_admin(
+        user_data: Admin = Body(...),
+        db: Session = Depends(create_session)
+):
+    return user_data.info_admin(db)
+
+@router.get("/find-admin")
+def find_admin(
+        user_data: Admin = Body(...),
+        db: Session = Depends(create_session)
+):
+    return user_data.find_admin(db)
 

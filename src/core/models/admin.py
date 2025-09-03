@@ -97,12 +97,23 @@ class Admin(Base):
         db_session.refresh(self)
         return self
 
-    def login_admin(self, db_session, email, password):
-        admin = db_session.query(Admin).filter(Admin.email == email).first()
-        checkpassword = bcrypt.checkpw(password.encode('utf-8'), admin.Password.encode('utf-8'))
-        if admin and checkpassword:
-            return admin
-        return None
+    def info_admin(self, db_session):
+        total_admin = db_session.query(Admin).filter(Admin.UserRole == UserRoleEnum.Admin).count()
+        total_group_admin = db_session.query(Admin).filter(Admin.UserRole == UserRoleEnum.GroupAdmin).count()
+        last_admin = db_session.query(Admin).order_by(Admin.CreatedDate.desc()).first()
+        return {
+            "total_admin": total_admin,
+            "total_group_admin": total_group_admin,
+            "last_admin": {
+                last_admin.FirstName,
+                last_admin.LastName,
+                last_admin.CreatedDate,
+            } if last_admin else None
+        }
 
+    def find_admin(self, db_session):
+        result_list = db_session.query(Admin).filter(Admin.Latitude.isnot(None), Admin.Longitude.isnot(None)).all()
+        needy_list = [(row.AdminID, row.Latitude, row.Longitude, row.FirstName, row.LastName, row.City, row.Street) for row in result_list]
+        return needy_list
 
 AdminCreate = sqlalchemy_model_to_pydantic(Admin, exclude=['AdminID', 'CreatedDate', 'UpdatedDate'])

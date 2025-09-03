@@ -13,6 +13,7 @@ def signup_register(
     register = Register(**user_data.dict())
     return register.create_register(db)
 
+
 @router.post("/edit-register/{register_id}")
 def edit_register(
         register_id: int,
@@ -32,3 +33,25 @@ def delete_register(
 ):
     register = db.query(Register).filter(Register.RegisterID == register_id).first()
     return register.delete_register(db,register_id)
+
+@router.post("/find-register")
+def find_register(
+        user_data: Register = Body(...),
+        db: Session = Depends(create_session)
+):
+    register = Register(**user_data.dict())
+    return register.find_register(db)
+
+@router.get("/info_needy")
+def info_needy(
+    user_data: Register = Body(...),
+    db: Session = Depends(create_session)
+):
+    return  user_data.info_needy(db)
+
+@router.get("/find-needy")
+def find_needy(
+        user_data: Register = Body(...),
+        db: Session = Depends(create_session)
+):
+    return user_data.find_needy(db)
