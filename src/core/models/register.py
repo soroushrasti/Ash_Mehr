@@ -8,6 +8,20 @@ from src.core.models import Base
 from pydantic import create_model
 from src.core.models.admin import Admin
 
+
+def info_register(db_session):
+    total_needy_person = db_session.query(Register).count()
+    last_needy_person = db_session.query(Register).order_by(Register.CreatedDate.desc()).first()
+    return {
+        "total_needy_person": total_needy_person,
+        "last_needy_person": {
+            last_needy_person.FirstName: last_needy_person.FirstName,
+            last_needy_person.LastName: last_needy_person.LastName,
+            last_needy_person.CreatedDate: last_needy_person.CreatedDate,
+        } if last_needy_person else None
+    }
+
+
 class Register(Base):
     __tablename__ = "register"
     RegisterID: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -129,6 +143,75 @@ class Register(Base):
             db_session.delete(child)
         db_session.commit()
         return self
+
+    def info_needy(self, db_session):
+        total_needy = db_session.query(Register).count()
+        last_needy = db_session.query(Register).order_by(Register.CreatedDate.desc()).first()
+        return {
+            "total_needy": total_needy,
+            "last_needy": {
+                last_needy.FirstName,
+                last_needy.LastName,
+                last_needy.CreatedDate,
+            } if last_needy else None
+        }
+
+    def find_needy(self, db_session):
+        result_list: Register = db_session.query(Register).filter(Register.Latitude.isnot(None), Register.Longitude.isnot(None)).all()
+        needy_list = [(row.RegisterID, row.Latitude, row.Longitude, row.FirstName, row.LastName, row.City, row.Street) for row in result_list]
+        return needy_list
+
+    def find_register(self, db_session):
+        query = db_session.query(Register)
+        if self.FirstName:
+            query = query.filter(Register.FirstName == self.FirstName)
+        if self.LastName:
+            query = query.filter(Register.LastName == self.LastName)
+        if self.Phone:
+            query = query.filter(Register.Phone == self.Phone)
+        if self.Email:
+            query = query.filter(Register.Email == self.Email)
+        if self.City:
+            query = query.filter(Register.City == self.City)
+        if self.Street:
+            query = query.filter(Register.Street == self.Street)
+        if self.NationalID:
+            query = query.filter(Register.NationalID == self.NationalID)
+        if self.Age:
+            query = query.filter(Register.Age == self.Age)
+        if self.Region:
+            query = query.filter(Register.Region == self.Region)
+        if self.Gender:
+            query = query.filter(Register.Gender == self.Gender)
+        if self.HusbandFirstName:
+            query = query.filter(Register.HusbandFirstName == self.HusbandFirstName)
+        if self.HusbandLastName:
+            query = query.filter(Register.HusbandLastName == self.HusbandLastName)
+        if self.ReasonMissingHusband:
+            query =  query.filter(Register.ReasonMissingHusband == self.ReasonMissingHusband)
+        if self.UnderOrganizationName:
+            query = query.filter(Register.UnderOrganizationName == self.UnderOrganizationName)
+        if self.EducationLevel:
+            query = query.filter(Register.EducationLevel == self.EducationLevel)
+        if self.CreatedDate:
+            query = query.filter(Register.CreatedDate == self.CreatedDate)
+        if self.UpdatedDate:
+            query = query.filter(Register.UpdatedDate == self.UpdatedDate)
+        if self.IncomeForm:
+            query = query.filter(Register.IncomeForm == self.IncomeForm)
+        if self.CreatedBy:
+            query = query.filter(Register.CreatedBy == self.CreatedBy)
+        if self.Province:
+            query = query.filter(Register.Province == self.Province)
+        if self.NameFather:
+            query = query.filter(Register.NameFather == self.NameFather)
+        if self.Latitude:
+            query = query.filter(Register.Latitude == self.Latitude)
+        if self.Longitude:
+            query = query.filter(Register.Longitude == self.Longitude)
+
+        return query.all()
+
 
 class ChildrenOfRegister(Base):
     __tablename__ = "children_of_register"
