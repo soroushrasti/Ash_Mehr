@@ -11,8 +11,8 @@ from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
 
 
 class AdminLogin(BaseModel):
-    Username: str
-    Password: str
+    Username: Optional[str] = None
+    Password: Optional[str] = None
 
 # Map point response model for location endpoints
 class MapPoint(BaseModel):

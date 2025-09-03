@@ -20,8 +20,8 @@ def _build_fields(model: Type[DeclarativeMeta], exclude: Optional[list] = None):
             python_type = column.type.python_type
         except (NotImplementedError, AttributeError):
             python_type = str
-        default = ... if not column.nullable and not column.default else None
-        fields[column.name] = (python_type, default)
+        # Make every field optional for API schemas by default
+        fields[column.name] = (Optional[python_type], None)  # type: ignore[arg-type]
     return fields
 
 

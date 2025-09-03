@@ -5,6 +5,7 @@ from src.core.models import Base, sqlalchemy_model_to_pydantic
 from src.core.models.register import Register
 from src.core.models.admin import Admin
 from datetime import datetime
+from typing import Optional
 
 class Good(Base):
     __tablename__ = "good"
@@ -20,7 +21,7 @@ class Good(Base):
     admin: Mapped[Admin] = relationship("Admin")
 
     ### create __init__ method to create an good
-    def __init__(self, TypeGood: str, NumberGood: int, GivenToWhome: int, GivenBy: int = None):
+    def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None):
         self.TypeGood = TypeGood
         self.NumberGood = NumberGood
         self.GivenToWhome = GivenToWhome
@@ -33,17 +34,17 @@ class Good(Base):
          return self
 
     def edit_good(self, db_session, user_data):
-        if user_data.TypeGood:
+        if user_data.TypeGood is not None:
             self.TypeGood = user_data.TypeGood
-        if user_data.NumberGood:
+        if user_data.NumberGood is not None:
             self.NumberGood = user_data.NumberGood
-        if user_data.GivenToWhome:
+        if user_data.GivenToWhome is not None:
             self.GivenToWhome = user_data.GivenToWhome
-        if user_data.GivenBy:
+        if user_data.GivenBy is not None:
             self.GivenBy = user_data.GivenBy
-        if user_data.CreatedDate:
+        if user_data.CreatedDate is not None:
             self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate:
+        if user_data.UpdatedDate is not None:
             self.UpdatedDate = user_data.UpdatedDate
         db_session.commit()
         return self
