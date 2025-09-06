@@ -82,10 +82,6 @@ class Admin(Base):
             self.Password = user_data.Password
         if user_data.PostCode is not None:
             self.PostCode = user_data.PostCode
-        if user_data.CreatedDate is not None:
-            self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate is not None:
-            self.UpdatedDate = user_data.UpdatedDate
         if user_data.Latitude is not None:
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:

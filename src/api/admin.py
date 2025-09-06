@@ -40,7 +40,7 @@ def delete_admin(
 ):
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        raise HTTPException(status_code=404, detail="ادمین پیدا نشد")
     return admin.delete_admin(db)
 
 @router.post("/edit-admin/{admin_id}", response_model=AdminOut)
@@ -51,7 +51,7 @@ def edit_admin(
 ):
     admin :Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        raise HTTPException(status_code=404, detail="ادمین پیدا نشد")
     else:
         return admin.edit_admin(db_session=db, user_data=user_data or AdminCreate())
 

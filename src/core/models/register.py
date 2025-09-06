@@ -109,8 +109,6 @@ class Register(Base):
             self.NationalID = user_data.NationalID
         if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
-        if getattr(user_data, 'MessageID', None) is not None:
-            self.MessageID = user_data.MessageID
         if user_data.Age is not None:
             self.Age = user_data.Age
         if user_data.Region is not None:
@@ -127,10 +125,6 @@ class Register(Base):
             self.UnderOrganizationName = user_data.UnderOrganizationName
         if user_data.EducationLevel is not None:
             self.EducationLevel = user_data.EducationLevel
-        if user_data.CreatedDate is not None:
-            self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate is not None:
-            self.UpdatedDate = user_data.UpdatedDate
         if user_data.IncomeForm is not None:
             self.IncomeForm = user_data.IncomeForm
         if user_data.Province is not None:
@@ -141,7 +135,10 @@ class Register(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
+        if user_data.children_of_reg is not None:
+            self.children_of_reg = user_data.children_of_reg
         db_session.commit()
+        db_session.refresh(self)
         return self
 
 
@@ -153,58 +150,6 @@ class Register(Base):
             db_session.delete(child)
         db_session.commit()
         return self
-
-    def find_needy(self, db_session):
-        query = db_session.query(Register)
-        if self.FirstName:
-            query = query.filter(Register.FirstName == self.FirstName)
-        if self.LastName:
-            query = query.filter(Register.LastName == self.LastName)
-        if self.Phone:
-            query = query.filter(Register.Phone == self.Phone)
-        if self.Email:
-            query = query.filter(Register.Email == self.Email)
-        if self.City:
-            query = query.filter(Register.City == self.City)
-        if self.Street:
-            query = query.filter(Register.Street == self.Street)
-        if self.NationalID:
-            query = query.filter(Register.NationalID == self.NationalID)
-        if self.Age:
-            query = query.filter(Register.Age == self.Age)
-        if self.Region:
-            query = query.filter(Register.Region == self.Region)
-        if self.Gender:
-            query = query.filter(Register.Gender == self.Gender)
-        if self.HusbandFirstName:
-            query = query.filter(Register.HusbandFirstName == self.HusbandFirstName)
-        if self.HusbandLastName:
-            query = query.filter(Register.HusbandLastName == self.HusbandLastName)
-        if self.ReasonMissingHusband:
-            query =  query.filter(Register.ReasonMissingHusband == self.ReasonMissingHusband)
-        if self.UnderOrganizationName:
-            query = query.filter(Register.UnderOrganizationName == self.UnderOrganizationName)
-        if self.EducationLevel:
-            query = query.filter(Register.EducationLevel == self.EducationLevel)
-        if self.CreatedDate:
-            query = query.filter(Register.CreatedDate == self.CreatedDate)
-        if self.UpdatedDate:
-            query = query.filter(Register.UpdatedDate == self.UpdatedDate)
-        if self.IncomeForm:
-            query = query.filter(Register.IncomeForm == self.IncomeForm)
-        if self.CreatedBy:
-            query = query.filter(Register.CreatedBy == self.CreatedBy)
-        if self.Province:
-            query = query.filter(Register.Province == self.Province)
-        if self.NameFather:
-            query = query.filter(Register.NameFather == self.NameFather)
-        if self.Latitude:
-            query = query.filter(Register.Latitude == self.Latitude)
-        if self.Longitude:
-            query = query.filter(Register.Longitude == self.Longitude)
-
-        return query.all()
-
 
 class ChildrenOfRegister(Base):
     __tablename__ = "children_of_register"

@@ -21,8 +21,8 @@ def edit_good(
         user_data: GoodCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    good = db.query(Good).filter(Good.GoodID == good_id).first()
+    good :Good = db.query(Good).filter(Good.GoodID == good_id).first()
     if not good:
-        raise HTTPException(status_code=404, detail="Good not found")
+        raise HTTPException(status_code=404, detail="کالا پیدا نشد")
     else:
-        return good.edit_good(db, user_data or GoodCreate())
+        return good.edit_good(db_session=db, user_data=user_data or GoodCreate())

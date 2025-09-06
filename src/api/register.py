@@ -32,11 +32,11 @@ def edit_register(
         user_data: RegisterCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    register = db.query(Register).filter(Register.RegisterID == register_id).first()
+    register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="Register not found")
     else:
-        return register.edit_register(db, user_data or RegisterCreate())
+        return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
 @router.delete("/delete-register/{register_id}", status_code=200)
 def delete_register(
@@ -134,9 +134,3 @@ def info_needy(
         "LastNeedyNameCreated": name,
     }
 
-@router.post("/find-needy", status_code=200)
-def find_needy(
-        user_data: Register = Body(...),
-        db: Session = Depends(create_session)
-):
-    return  user_data.find_needy(db)
