@@ -21,10 +21,13 @@ def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    payload = user_data.dict() if user_data else {}
-    register = Register(**payload)
-    return register.create_register(db)
-
+    rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+    if not rregister:
+        payload = user_data.dict() if user_data else {}
+        register = Register(**payload)
+        return register.create_register(db)
+    else:
+        raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
 
 @router.post("/edit-register/{register_id}")
 def edit_register(
@@ -34,7 +37,7 @@ def edit_register(
 ):
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
-        raise HTTPException(status_code=404, detail="Register not found")
+        raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
@@ -134,3 +137,24 @@ def info_needy(
         "LastNeedyNameCreated": name,
     }
 
+@ router.get("/get-needy/{register_id}")
+def get_needy(
+        register_id: int,
+        db: Session = Depends(create_session)
+):
+    needy: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
+    return needy
+
+@router.post("/signin-needy", status_code=201)
+def signin_needy(
+        user_data: RegisterCreate | None = Body(None),
+        db: Session = Depends(create_session)
+):
+    needy: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+    if not needy:
+        raise HTTPException(status_code=404, detail="شماره تلفن پیدا نشد")
+    name = f"{needy.FirstName or ''} {needy.LastName or ''}".strip() or None
+    return {
+        "needyID": needy.RegisterID,
+        "name": name,
+    }
