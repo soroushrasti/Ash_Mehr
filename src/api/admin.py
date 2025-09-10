@@ -178,12 +178,6 @@ def find_admin(
         )
     )
 
-    if is_pg:
-        query = query.filter(
-            Admin.Latitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-            Admin.Longitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-        )
-
     rows = db.execute(query.statement).mappings().all()
     return rows
 
