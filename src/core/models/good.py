@@ -42,11 +42,8 @@ class Good(Base):
             self.GivenToWhome = user_data.GivenToWhome
         if user_data.GivenBy is not None:
             self.GivenBy = user_data.GivenBy
-        if user_data.CreatedDate is not None:
-            self.CreatedDate = user_data.CreatedDate
-        if user_data.UpdatedDate is not None:
-            self.UpdatedDate = user_data.UpdatedDate
         db_session.commit()
+        db_session.refresh(self)
         return self
 
 GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate', 'UpdatedDate'])

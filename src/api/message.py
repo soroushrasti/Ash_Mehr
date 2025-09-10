@@ -21,8 +21,8 @@ def edit_message(
         user_data: MessageCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    message = db.query(Message).filter(Message.MessageID == message_id).first()
+    message :Message = db.query(Message).filter(Message.MessageID == message_id).first()
     if not message:
-        raise HTTPException(status_code=404, detail="Message not found")
+        raise HTTPException(status_code=404, detail="پیغام پیدا نشد")
     else:
-        return message.edit_message(db, user_data or MessageCreate())
+        return message.edit_message(db_session=db, user_data= user_data or MessageCreate())

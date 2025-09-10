@@ -21,31 +21,35 @@ def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    payload = user_data.dict() if user_data else {}
-    register = Register(**payload)
-    return register.create_register(db)
+    rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+    if not rregister:
+        payload = user_data.dict() if user_data else {}
+        register = Register(**payload)
+        return register.create_register(db)
+    else:
+        raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
 
-
-@router.post("/edit-register/{register_id}")
-def edit_register(
+@router.post("/edit-needy/{register_id}")
+def edit_needy(
         register_id: int,
         user_data: RegisterCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    register = db.query(Register).filter(Register.RegisterID == register_id).first()
+    register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
-        raise HTTPException(status_code=404, detail="Register not found")
+        raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
     else:
-        return register.edit_register(db, user_data or RegisterCreate())
+        return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
-@router.delete("/delete-register/{register_id}", status_code=200)
-def delete_register(
+@router.delete("/delete-needy/{register_id}", status_code=200)
+def delete_needy(
         register_id: int,
         db: Session = Depends(create_session)
 ):
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     return register.delete_register(db,register_id)
 
+## find needy people with lat and lng
 @router.get("/find-needy")
 def find_needy(
         db: Session = Depends(create_session)
@@ -85,6 +89,7 @@ def find_needy(
             lng_expr,
             name_expr,
             info_expr,
+            Register.Phone.label('phone')
         )
         .filter(
             Register.Latitude.isnot(None),
@@ -104,6 +109,7 @@ def find_needy(
     rows = db.execute(query.statement).mappings().all()
     return rows
 
+# stattistic of needy people
 @router.get("/info-needy")
 def info_needy(
         db: Session = Depends(create_session)
@@ -132,4 +138,26 @@ def info_needy(
         "numberNeedyPersons": top.total,
         "LastNeedycreatedTime": top.CreatedDate,
         "LastNeedyNameCreated": name,
+    }
+
+@ router.get("/get-needy/{register_id}")
+def get_needy(
+        register_id: int,
+        db: Session = Depends(create_session)
+):
+    needy: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
+    return needy
+
+@router.post("/signin-needy", status_code=201)
+def signin_needy(
+        user_data: RegisterCreate | None = Body(None),
+        db: Session = Depends(create_session)
+):
+    needy: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+    if not needy:
+        raise HTTPException(status_code=404, detail="شماره تلفن پیدا نشد")
+    name = f"{needy.FirstName or ''} {needy.LastName or ''}".strip() or None
+    return {
+        "needyID": needy.RegisterID,
+        "name": name,
     }
