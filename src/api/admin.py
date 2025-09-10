@@ -28,9 +28,13 @@ def signup_admin(
         user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    payload = user_data.dict() if user_data else {}
-    admin: Admin = Admin(**payload)
-    return admin.create_admin(db)
+     radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
+     if not radmin:
+         payload = user_data.dict() if user_data else {}
+         admin: Admin = Admin(**payload)
+         return admin.create_admin(db)
+     else:
+        raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
 
 ## delete admin
 @router.delete("/delete-admin/{admin_id}", status_code=200, response_model=AdminOut)
@@ -40,7 +44,7 @@ def delete_admin(
 ):
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="ادمین پیدا نشد")
+        raise HTTPException(status_code=404, detail="نماینده پیدا نشد")
     return admin.delete_admin(db)
 
 @router.post("/edit-admin/{admin_id}", response_model=AdminOut)
@@ -51,7 +55,7 @@ def edit_admin(
 ):
     admin :Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
-        raise HTTPException(status_code=404, detail="ادمین پیدا نشد")
+        raise HTTPException(status_code=404, detail="نماینده پیدا نشد")
     else:
         return admin.edit_admin(db_session=db, user_data=user_data or AdminCreate())
 
@@ -182,3 +186,11 @@ def find_admin(
 
     rows = db.execute(query.statement).mappings().all()
     return rows
+
+@ router.get("/get-admin/{admin_id}")
+def get_admin(
+        admin_id: int,
+        db: Session = Depends(create_session)
+):
+    admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
+    return admin
