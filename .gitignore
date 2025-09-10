@@ -13,3 +13,5 @@ dist
 *.xhtml
 *.xml
 *.pyc
+*.pyc
+__pycache__/
