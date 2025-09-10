@@ -169,12 +169,8 @@ def find_admin(
             lng_expr,
             name_expr,
             info_expr,
-        )
-        .filter(
-            Admin.Latitude.isnot(None),
-            Admin.Latitude != "",
-            Admin.Longitude.isnot(None),
-            Admin.Longitude != "",
+            Admin.Phone.label("phone"),
+            Admin.UserRole.label("role"),
         )
     )
 

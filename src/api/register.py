@@ -26,8 +26,8 @@ def signup_register(
     return register.create_register(db)
 
 
-@router.post("/edit-register/{register_id}")
-def edit_register(
+@router.post("/edit-needy/{register_id}")
+def edit_needy(
         register_id: int,
         user_data: RegisterCreate | None = Body(None),
         db: Session = Depends(create_session)
@@ -38,14 +38,15 @@ def edit_register(
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
-@router.delete("/delete-register/{register_id}", status_code=200)
-def delete_register(
+@router.delete("/delete-needy/{register_id}", status_code=200)
+def delete_needy(
         register_id: int,
         db: Session = Depends(create_session)
 ):
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     return register.delete_register(db,register_id)
 
+## find needy people with lat and lng
 @router.get("/find-needy")
 def find_needy(
         db: Session = Depends(create_session)
@@ -85,6 +86,7 @@ def find_needy(
             lng_expr,
             name_expr,
             info_expr,
+            Register.Phone.label('phone')
         )
         .filter(
             Register.Latitude.isnot(None),
@@ -104,6 +106,7 @@ def find_needy(
     rows = db.execute(query.statement).mappings().all()
     return rows
 
+# stattistic of needy people
 @router.get("/info-needy")
 def info_needy(
         db: Session = Depends(create_session)
