@@ -21,16 +21,16 @@ def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
-    if not rregister:
-        payload = user_data.dict() if user_data else {}
-        register = Register(**payload)
-        return register.create_register(db)
-    else:
-        raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+    if user_data.Phone is not None:
+      rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+      if rregister is not None:
+          raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+    payload = user_data.dict() if user_data else {}
+    register = Register(**payload)
+    return register.create_register(db)
 
-@router.post("/edit-needy/{register_id}")
-def edit_needy(
+@router.post("/edit-register/{register_id}")
+def edit_register(
         register_id: int,
         user_data: RegisterCreate | None = Body(None),
         db: Session = Depends(create_session)
@@ -41,8 +41,8 @@ def edit_needy(
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
-@router.delete("/delete-needy/{register_id}", status_code=200)
-def delete_needy(
+@router.delete("/delete-register/{register_id}", status_code=200)
+def delete_register(
         register_id: int,
         db: Session = Depends(create_session)
 ):

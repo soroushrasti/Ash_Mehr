@@ -8,6 +8,7 @@ from sqlalchemy import func, literal, case, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
+from src.core.models.register import Register, RegisterCreate
 
 
 class AdminLogin(BaseModel):
@@ -28,13 +29,13 @@ def signup_admin(
         user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-     radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
-     if not radmin:
-         payload = user_data.dict() if user_data else {}
-         admin: Admin = Admin(**payload)
-         return admin.create_admin(db)
-     else:
-        raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
+    if user_data.Phone is not None:
+        radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
+        if radmin is not None:
+            raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+    payload = user_data.dict() if user_data else {}
+    admin: Admin = Admin(**payload)
+    return admin.create_admin(db)
 
 ## delete admin
 @router.delete("/delete-admin/{admin_id}", status_code=200, response_model=AdminOut)
@@ -188,3 +189,24 @@ def get_admin(
 ):
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     return admin
+
+@router.post("/edit-needy/{admin_id}")
+def edit_needy(
+        admin_id: int,
+        user_data: RegisterCreate | None = Body(None),
+        db: Session = Depends(create_session),
+):
+    needy: Register = db.query(Register).filter(Register.CreatedBy == admin_id).first()
+    if not needy:
+        raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
+    else:
+        return needy.edit_register(db_session=db, user_data=user_data or RegisterCreate())
+
+@router.post("/delete-needy/{admin_id}")
+def delete_needy(
+        admin_id: int,
+        db: Session = Depends(create_session),
+):
+    needy: Register = db.query(Register).filter(Register.CreatedBy == admin_id).first()
+    return needy.delete_register(db,needy.RegisterID)
+
