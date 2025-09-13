@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, Text, DateTime
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
-from pydantic import create_model
+from pydantic import create_model, ConfigDict
 from src.core.models.admin import Admin
 
 
@@ -135,8 +135,6 @@ class Register(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
-        if user_data.children_of_reg is not None:
-            self.children_of_reg = user_data.children_of_reg
         db_session.commit()
         db_session.refresh(self)
         return self
