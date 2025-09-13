@@ -32,7 +32,7 @@ def signup_admin(
     if user_data.Phone is not None:
         radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
         if radmin is not None:
-            raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+            raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
     payload = user_data.dict() if user_data else {}
     admin: Admin = Admin(**payload)
     return admin.create_admin(db)
