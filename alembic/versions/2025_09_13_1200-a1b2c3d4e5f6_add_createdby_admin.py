@@ -18,17 +18,9 @@ depends_on = None
 def upgrade() -> None:
     # Add CreatedBy column (self-referential FK to admin.AdminID)
     op.add_column('admin', sa.Column('CreatedBy', sa.Integer(), nullable=True))
-    op.create_foreign_key(
-        'fk_admin_createdby_admin',
-        source_table='admin',
-        referent_table='admin',
-        local_cols=['CreatedBy'],
-        remote_cols=['AdminID'],
-        ondelete=None
-    )
+
 
 
 def downgrade() -> None:
-    op.drop_constraint('fk_admin_createdby_admin', 'admin', type_='foreignkey')
     op.drop_column('admin', 'CreatedBy')
 
