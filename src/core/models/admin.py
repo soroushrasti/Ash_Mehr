@@ -88,7 +88,7 @@ class Admin(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
-        if getattr(user_data, 'CreatedBy', None) is not None:
+        if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
         db_session.commit()
         db_session.refresh(self)

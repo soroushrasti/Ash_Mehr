@@ -29,7 +29,7 @@ def signup_register(
     register = Register(**payload)
     return register.create_register(db)
 
-@router.post("/edit-register/{register_id}")
+@router.post("/edit-needy/{register_id}")
 def edit_register(
         register_id: int,
         user_data: RegisterCreate | None = Body(None),
@@ -41,7 +41,7 @@ def edit_register(
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
-@router.delete("/delete-register/{register_id}", status_code=200)
+@router.delete("/delete-needy/{register_id}", status_code=200)
 def delete_register(
         register_id: int,
         db: Session = Depends(create_session)

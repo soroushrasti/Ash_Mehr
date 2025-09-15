@@ -190,23 +190,5 @@ def get_admin(
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     return admin
 
-@router.post("/edit-needy/{admin_id}")
-def edit_needy(
-        admin_id: int,
-        user_data: RegisterCreate | None = Body(None),
-        db: Session = Depends(create_session),
-):
-    needy: Register = db.query(Register).filter(Register.CreatedBy == admin_id).first()
-    if not needy:
-        raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
-    else:
-        return needy.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
-@router.post("/delete-needy/{admin_id}")
-def delete_needy(
-        admin_id: int,
-        db: Session = Depends(create_session),
-):
-    needy: Register = db.query(Register).filter(Register.CreatedBy == admin_id).first()
-    return needy.delete_register(db,needy.RegisterID)
 
