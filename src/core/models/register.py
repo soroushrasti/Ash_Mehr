@@ -37,7 +37,6 @@ class Register(Base):
     CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"))
     BirthDate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     UnderWhichAdmin: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
-    Age: Mapped[Optional[int]] = mapped_column()
     Region: Mapped[Optional[str]] = mapped_column()
     Gender: Mapped[Optional[str]] = mapped_column()
     HusbandFirstName: Mapped[Optional[str]] = mapped_column()
@@ -53,7 +52,7 @@ class Register(Base):
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
-                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Age: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
+                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
                  EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, children_of_registre: Optional[list[dict]] = None):
         self.FirstName = FirstName
@@ -67,7 +66,6 @@ class Register(Base):
         self.CreatedBy = CreatedBy
         self.BirthDate = BirthDate
         self.UnderWhichAdmin = UnderWhichAdmin
-        self.Age = Age
         self.Region = Region
         self.Gender = Gender
         self.HusbandFirstName = HusbandFirstName
@@ -117,8 +115,6 @@ class Register(Base):
             self.BirthDate = user_data.BirthDate
         if getattr(user_data, 'UnderWhichAdmin', None) is not None:
             self.UnderWhichAdmin = user_data.UnderWhichAdmin
-        if user_data.Age is not None:
-            self.Age = user_data.Age
         if user_data.Region is not None:
             self.Region = user_data.Region
         if user_data.Gender is not None:
