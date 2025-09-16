@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Text, DateTime
+from sqlalchemy import ForeignKey, Text, DateTime, Date
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
@@ -35,6 +35,8 @@ class Register(Base):
     NameFather: Mapped[Optional[str]] = mapped_column()
     NationalID: Mapped[Optional[str]] = mapped_column()
     CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"))
+    BirthDate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    UnderWhichAdmin: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
     Age: Mapped[Optional[int]] = mapped_column()
     Region: Mapped[Optional[str]] = mapped_column()
     Gender: Mapped[Optional[str]] = mapped_column()
@@ -51,7 +53,7 @@ class Register(Base):
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
-                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, Age: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
+                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Age: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
                  EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, children_of_registre: Optional[list[dict]] = None):
         self.FirstName = FirstName
@@ -63,6 +65,8 @@ class Register(Base):
         self.Street = Street
         self.NationalID = NationalID
         self.CreatedBy = CreatedBy
+        self.BirthDate = BirthDate
+        self.UnderWhichAdmin = UnderWhichAdmin
         self.Age = Age
         self.Region = Region
         self.Gender = Gender
@@ -109,6 +113,10 @@ class Register(Base):
             self.NationalID = user_data.NationalID
         if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
+        if getattr(user_data, 'BirthDate', None) is not None:
+            self.BirthDate = user_data.BirthDate
+        if getattr(user_data, 'UnderWhichAdmin', None) is not None:
+            self.UnderWhichAdmin = user_data.UnderWhichAdmin
         if user_data.Age is not None:
             self.Age = user_data.Age
         if user_data.Region is not None:
