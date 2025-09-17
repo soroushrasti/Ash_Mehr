@@ -65,8 +65,18 @@ class Register(Base):
         self.Street = Street
         self.NationalID = NationalID
         self.CreatedBy = CreatedBy
-        self.BirthDate = BirthDate
-        self.UnderWhichAdmin = UnderWhichAdmin
+        # Normalize BirthDate input (accepts date | str | "")
+        if isinstance(BirthDate, str):
+            _bd = BirthDate.strip()
+            self.BirthDate = date.fromisoformat(_bd) if _bd else None
+        else:
+            self.BirthDate = BirthDate
+        # Normalize UnderWhichAdmin input (accepts int | str | "")
+        if isinstance(UnderWhichAdmin, str):
+            _uwa = UnderWhichAdmin.strip()
+            self.UnderWhichAdmin = int(_uwa) if _uwa else None
+        else:
+            self.UnderWhichAdmin = UnderWhichAdmin
         self.Age = Age
         self.Region = Region
         self.Gender = Gender
@@ -114,9 +124,19 @@ class Register(Base):
         if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
         if getattr(user_data, 'BirthDate', None) is not None:
-            self.BirthDate = user_data.BirthDate
+            bd = user_data.BirthDate
+            if isinstance(bd, str):
+                _bd = bd.strip()
+                self.BirthDate = date.fromisoformat(_bd) if _bd else None
+            else:
+                self.BirthDate = bd
         if getattr(user_data, 'UnderWhichAdmin', None) is not None:
-            self.UnderWhichAdmin = user_data.UnderWhichAdmin
+            uwa = user_data.UnderWhichAdmin
+            if isinstance(uwa, str):
+                _uwa = uwa.strip()
+                self.UnderWhichAdmin = int(_uwa) if _uwa else None
+            else:
+                self.UnderWhichAdmin = uwa
         if user_data.Age is not None:
             self.Age = user_data.Age
         if user_data.Region is not None:
@@ -187,5 +207,7 @@ ChildrenOfRegisterCreate = sqlalchemy_model_to_pydantic(ChildrenOfRegister, excl
 RegisterCreateWithChildren = create_model(
     "RegisterCreateWithChildren",
     __base__=RegisterCreate,
-    children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None)
+    children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None),
+    BirthDate=(Optional[date | str], None),
+    UnderWhichAdmin=(Optional[int | str], None),
 )

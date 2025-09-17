@@ -6,6 +6,7 @@ from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
+from src.core.models.admin import Admin
 
 
 class MapPoint(BaseModel):
@@ -57,7 +58,7 @@ def find_needy(
     bind = db.get_bind()
     is_pg = bind.dialect.name == "postgresql"
 
-    name_expr = func.nullif(
+    needy_name_expr = func.nullif(
         func.trim(
             func.concat(
                 func.coalesce(Register.FirstName, ""),
@@ -67,6 +68,19 @@ def find_needy(
         ),
         "",
     ).label("name")
+
+    group_name_expr = func.nullif(
+        func.trim(
+            func.concat(
+                func.coalesce(Admin.FirstName, ""),
+                literal(" "),
+                func.coalesce(Admin.LastName, ""),
+                literal(" "),
+                func.coalesce(Admin.City, ""),
+            )
+        ),
+        "",
+    ).label("group_name")
 
     info_expr = func.nullif(
         func.trim(
@@ -87,10 +101,11 @@ def find_needy(
             Register.RegisterID.label("id"),
             lat_expr,
             lng_expr,
-            name_expr,
+            needy_name_expr,
+            group_name_expr,
             info_expr,
             Register.Phone.label('phone')
-        )
+        ).join(Admin, Admin.AdminID == Register.UnderWhichAdmin, isouter=True)
         .filter(
             Register.Latitude.isnot(None),
             Register.Latitude != "",
