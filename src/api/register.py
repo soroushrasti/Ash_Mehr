@@ -33,7 +33,7 @@ def signup_register(
 @router.post("/edit-needy/{register_id}")
 def edit_register(
         register_id: int,
-        user_data: RegisterCreate | None = Body(None),
+        user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
