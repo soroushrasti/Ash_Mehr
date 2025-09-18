@@ -6,6 +6,7 @@ from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
+from src.core.models.admin import Admin
 
 
 class MapPoint(BaseModel):
@@ -21,18 +22,18 @@ def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
-    if not rregister:
-        payload = user_data.dict() if user_data else {}
-        register = Register(**payload)
-        return register.create_register(db)
-    else:
-        raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+    if user_data.Phone is not None:
+      rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+      if rregister is not None:
+          raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+    payload = user_data.dict() if user_data else {}
+    register = Register(**payload)
+    return register.create_register(db)
 
 @router.post("/edit-needy/{register_id}")
-def edit_needy(
+def edit_register(
         register_id: int,
-        user_data: RegisterCreate | None = Body(None),
+        user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
@@ -42,7 +43,7 @@ def edit_needy(
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
 @router.delete("/delete-needy/{register_id}", status_code=200)
-def delete_needy(
+def delete_register(
         register_id: int,
         db: Session = Depends(create_session)
 ):
@@ -57,7 +58,7 @@ def find_needy(
     bind = db.get_bind()
     is_pg = bind.dialect.name == "postgresql"
 
-    name_expr = func.nullif(
+    needy_name_expr = func.nullif(
         func.trim(
             func.concat(
                 func.coalesce(Register.FirstName, ""),
@@ -67,6 +68,19 @@ def find_needy(
         ),
         "",
     ).label("name")
+
+    group_name_expr = func.nullif(
+        func.trim(
+            func.concat(
+                func.coalesce(Admin.FirstName, ""),
+                literal(" "),
+                func.coalesce(Admin.LastName, ""),
+                literal(" "),
+                func.coalesce(Admin.City, ""),
+            )
+        ),
+        "",
+    ).label("group_name")
 
     info_expr = func.nullif(
         func.trim(
@@ -87,10 +101,11 @@ def find_needy(
             Register.RegisterID.label("id"),
             lat_expr,
             lng_expr,
-            name_expr,
+            needy_name_expr,
+            group_name_expr,
             info_expr,
             Register.Phone.label('phone')
-        )
+        ).join(Admin, Admin.AdminID == Register.UnderWhichAdmin, isouter=True)
         .filter(
             Register.Latitude.isnot(None),
             Register.Latitude != "",

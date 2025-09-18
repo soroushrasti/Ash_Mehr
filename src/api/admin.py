@@ -8,6 +8,7 @@ from sqlalchemy import func, literal, case, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
+from src.core.models.register import Register, RegisterCreate
 
 
 class AdminLogin(BaseModel):
@@ -28,13 +29,13 @@ def signup_admin(
         user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-     radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
-     if not radmin:
-         payload = user_data.dict() if user_data else {}
-         admin: Admin = Admin(**payload)
-         return admin.create_admin(db)
-     else:
-        raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
+    if user_data.Phone is not None:
+        radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
+        if radmin is not None:
+            raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
+    payload = user_data.dict() if user_data else {}
+    admin: Admin = Admin(**payload)
+    return admin.create_admin(db)
 
 ## delete admin
 @router.delete("/delete-admin/{admin_id}", status_code=200, response_model=AdminOut)
@@ -178,12 +179,6 @@ def find_admin(
         )
     )
 
-    if is_pg:
-        query = query.filter(
-            Admin.Latitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-            Admin.Longitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-        )
-
     rows = db.execute(query.statement).mappings().all()
     return rows
 
@@ -194,3 +189,6 @@ def get_admin(
 ):
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     return admin
+
+
+

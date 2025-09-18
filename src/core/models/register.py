@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Text, DateTime
+from sqlalchemy import ForeignKey, Text, DateTime, Date
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
-from pydantic import create_model
+from pydantic import create_model, ConfigDict
 from src.core.models.admin import Admin
 
 
@@ -35,7 +35,8 @@ class Register(Base):
     NameFather: Mapped[Optional[str]] = mapped_column()
     NationalID: Mapped[Optional[str]] = mapped_column()
     CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"))
-    Age: Mapped[Optional[int]] = mapped_column()
+    BirthDate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    UnderWhichAdmin: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
     Region: Mapped[Optional[str]] = mapped_column()
     Gender: Mapped[Optional[str]] = mapped_column()
     HusbandFirstName: Mapped[Optional[str]] = mapped_column()
@@ -51,7 +52,7 @@ class Register(Base):
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
-                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, Age: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
+                 NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
                  EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, children_of_registre: Optional[list[dict]] = None):
         self.FirstName = FirstName
@@ -63,7 +64,18 @@ class Register(Base):
         self.Street = Street
         self.NationalID = NationalID
         self.CreatedBy = CreatedBy
-        self.Age = Age
+        # Normalize BirthDate input (accepts date | str | "")
+        if isinstance(BirthDate, str):
+            _bd = BirthDate.strip()
+            self.BirthDate = date.fromisoformat(_bd) if _bd else None
+        else:
+            self.BirthDate = BirthDate
+        # Normalize UnderWhichAdmin input (accepts int | str | "")
+        if isinstance(UnderWhichAdmin, str):
+            _uwa = UnderWhichAdmin.strip()
+            self.UnderWhichAdmin = int(_uwa) if _uwa else None
+        else:
+            self.UnderWhichAdmin = UnderWhichAdmin
         self.Region = Region
         self.Gender = Gender
         self.HusbandFirstName = HusbandFirstName
@@ -109,8 +121,20 @@ class Register(Base):
             self.NationalID = user_data.NationalID
         if user_data.CreatedBy is not None:
             self.CreatedBy = user_data.CreatedBy
-        if user_data.Age is not None:
-            self.Age = user_data.Age
+        if getattr(user_data, 'BirthDate', None) is not None:
+            bd = user_data.BirthDate
+            if isinstance(bd, str):
+                _bd = bd.strip()
+                self.BirthDate = date.fromisoformat(_bd) if _bd else None
+            else:
+                self.BirthDate = bd
+        if getattr(user_data, 'UnderWhichAdmin', None) is not None:
+            uwa = user_data.UnderWhichAdmin
+            if isinstance(uwa, str):
+                _uwa = uwa.strip()
+                self.UnderWhichAdmin = int(_uwa) if _uwa else None
+            else:
+                self.UnderWhichAdmin = uwa
         if user_data.Region is not None:
             self.Region = user_data.Region
         if user_data.Gender is not None:
@@ -135,8 +159,6 @@ class Register(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
-        if user_data.children_of_reg is not None:
-            self.children_of_reg = user_data.children_of_reg
         db_session.commit()
         db_session.refresh(self)
         return self
@@ -181,5 +203,8 @@ ChildrenOfRegisterCreate = sqlalchemy_model_to_pydantic(ChildrenOfRegister, excl
 RegisterCreateWithChildren = create_model(
     "RegisterCreateWithChildren",
     __base__=RegisterCreate,
-    children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None)
+    children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None),
+    BirthDate=(Optional[date | str], None),
+    UnderWhichAdmin=(Optional[int | str], None),
 )
+

@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import String, DateTime, Enum, Text
+from sqlalchemy import String, DateTime, Enum, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from src.core.models import Base, sqlalchemy_model_to_pydantic, sqlalchemy_model_to_pydantic_named
@@ -17,6 +17,7 @@ class UserRoleEnum(StrEnum):
 class Admin(Base):
     __tablename__ = "admin"
     AdminID: Mapped[int] = mapped_column(primary_key=True, index=True)
+    CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
     FirstName: Mapped[str] = mapped_column(String(100), nullable=False)
     LastName: Mapped[str] = mapped_column(String(100), nullable=False)
     Phone: Mapped[Optional[str]] = mapped_column(String(20))
@@ -33,7 +34,7 @@ class Admin(Base):
     Latitude: Mapped[Optional[str]] = mapped_column(Text)
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
 
-    def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None, NationalID: Optional[str] = None, UserRole: Optional[UserRoleEnum] = None, Password: Optional[str] = None, PostCode: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None):
+    def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None, NationalID: Optional[str] = None, UserRole: Optional[UserRoleEnum] = None, Password: Optional[str] = None, PostCode: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, CreatedBy: Optional[int] = None):
         self.PostCode = PostCode
         self.FirstName = FirstName
         self.LastName = LastName
@@ -47,6 +48,7 @@ class Admin(Base):
         self.Password = Password
         self.Latitude = Latitude
         self.Longitude = Longitude
+        self.CreatedBy = CreatedBy
 
     def create_admin(self, db_session):
         db_session.add(self)
@@ -86,6 +88,8 @@ class Admin(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
+        if user_data.CreatedBy is not None:
+            self.CreatedBy = user_data.CreatedBy
         db_session.commit()
         db_session.refresh(self)
         return self
