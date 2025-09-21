@@ -22,7 +22,7 @@ def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    if user_data.Phone is not None:
+    if user_data.Phone is not None and user_data.Phone != "":
       rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
       if rregister is not None:
           raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
