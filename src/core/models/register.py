@@ -100,7 +100,7 @@ class Register(Base):
                 child_obj = ChildrenOfRegister(**child, RegisterID = self.RegisterID)
             db_session.add(child_obj)
             db_session.commit()
-            db_session.refresh()
+            db_session.refresh(child_obj)
         return self
 
     def edit_register(self, db_session, user_data):
