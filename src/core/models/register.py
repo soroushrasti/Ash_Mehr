@@ -94,13 +94,6 @@ class Register(Base):
         db_session.commit()
         db_session.refresh(self)
 
-        children_data = self.__dict__.pop("children_of_reg", None)
-        if children_data:
-            for child in children_data:
-                child_obj = ChildrenOfRegister(**child, RegisterID = self.RegisterID)
-            db_session.add(child_obj)
-            db_session.commit()
-            db_session.refresh(child_obj)
         return self
 
     def edit_register(self, db_session, user_data):

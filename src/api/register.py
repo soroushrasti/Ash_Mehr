@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
-from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
+from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister
 from src.core.models.admin import Admin
 
 
@@ -27,6 +27,12 @@ def signup_register(
       if rregister is not None:
           raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
     payload = user_data.dict() if user_data else {}
+    children_data = payload.pop("children_of_registre", None)
+    if children_data:
+        for child in children_data:
+            child_obj = ChildrenOfRegister(**child)
+            db.add(child_obj)
+        db.commit()
     register = Register(**payload)
     return register.create_register(db)
 
