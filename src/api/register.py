@@ -17,24 +17,56 @@ class MapPoint(BaseModel):
     info: Optional[str] = None
 
 
+def _normalize_digit_string(value: str):
+    if not isinstance(value, str):
+        return value
+    return value.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
+
+
 @router.post("/signup-register", status_code=201)
 def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
+    if not user_data:
+        raise HTTPException(status_code=400, detail="Payload required")
     if user_data.Phone is not None and user_data.Phone != "":
-      rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
-      if rregister is not None:
-          raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
-    payload = user_data.dict() if user_data else {}
+        rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+        if rregister is not None:
+            raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+
+    payload = user_data.dict()
     children_data = payload.pop("children_of_registre", None)
-    if children_data:
-        for child in children_data:
-            child_obj = ChildrenOfRegister(**child)
-            db.add(child_obj)
-        db.commit()
+
+    # 1. Create parent first (use existing helper method for consistency)
     register = Register(**payload)
-    return register.create_register(db)
+    register = register.create_register(db)  # assumes this commits & refreshes
+
+    # 2. Now persist children with correct FK
+    if children_data:
+        try:
+            for child in children_data:
+                # Remove any incoming incorrect keys
+                child.pop("ChildrenOfRegisterID", None)
+                child["RegisterID"] = register.RegisterID  # enforce FK
+                # Normalize Age (Persian digits -> int or None)
+                if "Age" in child:
+                    age_val = child.get("Age")
+                    if isinstance(age_val, str):
+                        norm = _normalize_digit_string(age_val).strip()
+                        if norm.isdigit():
+                            child["Age"] = int(norm)
+                        elif norm == "":
+                            child["Age"] = None
+                child_obj = ChildrenOfRegister(**child)
+                db.add(child_obj)
+            db.commit()
+        except Exception:
+            db.rollback()
+            # Optional: could also delete the parent if atomicity across parent/children is required
+            raise HTTPException(status_code=500, detail="خطا در ثبت فرزندان")
+
+    return register
 
 @router.post("/edit-needy/{register_id}")
 def edit_register(

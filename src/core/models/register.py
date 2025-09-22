@@ -5,8 +5,7 @@ from sqlalchemy import ForeignKey, Text, DateTime, Date
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
-from pydantic import create_model, ConfigDict
-from src.core.models.admin import Admin
+from pydantic import create_model, ConfigDict, field_validator
 
 
 def info_register(db_session):
@@ -54,7 +53,7 @@ class Register(Base):
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
                  NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
-                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, children_of_registre: Optional[list[dict]] = None):
+                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None):
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -87,7 +86,6 @@ class Register(Base):
         self.Latitude = Latitude
         self.Longitude = Longitude
         self.NameFather = NameFather
-        self.children_of_reg = [ChildrenOfRegisterCreate(**child) for child in (children_of_registre or [])]
 
     def create_register(self, db_session):
         db_session.add(self)
@@ -190,15 +188,67 @@ class ChildrenOfRegister(Base):
         self.LastName = LastName
         self.EducationLevel = EducationLevel
 
+# --- Helpers for input normalization ---
+def _normalize_digit_string(value: str) -> str:
+    """
+    Convert Persian/Arabic digits to Western digits.
+    """
+    if not isinstance(value, str):
+        return value
+    trans = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+    return value.translate(trans)
+
 ## create RegisterCreate pydantic model with sqlalchemy_model_to_pydantic
 RegisterCreate = sqlalchemy_model_to_pydantic(Register, exclude=['RegisterID', 'CreatedDate', 'UpdatedDate'])
 ChildrenOfRegisterCreate = sqlalchemy_model_to_pydantic(ChildrenOfRegister, exclude=['ChildrenOfRegisterID', 'CreatedDate', 'UpdatedDate'])
-## add ChildrenOfRegisterCreate to RegisterCreate as list
+
+# Patched child model to sanitize Age
+class ChildrenOfRegisterCreatePatched(ChildrenOfRegisterCreate):
+    @field_validator('Age', mode='before')
+    def _age_from_str(cls, v):
+        if v in (None, '', 'null'):
+            return None
+        if isinstance(v, str):
+            v_norm = _normalize_digit_string(v).strip()
+            if v_norm == '':
+                return None
+            if v_norm.isdigit():
+                return int(v_norm)
+        return v
+
+# Base for Register validators
+class RegisterCreateBase(RegisterCreate):
+    @field_validator('BirthDate', mode='before')
+    def _birthdate_from_str(cls, v):
+        if v in (None, '', 'null'):
+            return None
+        if isinstance(v, str):
+            v_norm = _normalize_digit_string(v).strip()
+            if not v_norm:
+                return None
+            try:
+                return date.fromisoformat(v_norm)
+            except ValueError:
+                raise ValueError('BirthDate must be ISO format (YYYY-MM-DD)')
+        return v
+
+    @field_validator('UnderWhichAdmin', mode='before')
+    def _under_admin_from_str(cls, v):
+        if v in (None, '', 'null'):
+            return None
+        if isinstance(v, str):
+            v_norm = _normalize_digit_string(v).strip()
+            if v_norm == '':
+                return None
+            if v_norm.isdigit():
+                return int(v_norm)
+        return v
+
+# Rebuild RegisterCreateWithChildren using patched bases
 RegisterCreateWithChildren = create_model(
     "RegisterCreateWithChildren",
-    __base__=RegisterCreate,
-    children_of_registre=(Optional[list[ChildrenOfRegisterCreate]], None),
+    __base__=RegisterCreateBase,
+    children_of_registre=(Optional[list[ChildrenOfRegisterCreatePatched]], None),
     BirthDate=(Optional[date | str], None),
     UnderWhichAdmin=(Optional[int | str], None),
 )
-
