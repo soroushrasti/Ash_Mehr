@@ -200,7 +200,19 @@ def get_needy(
         db: Session = Depends(create_session)
 ):
     needy: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
-    return needy
+    if not needy:
+        raise HTTPException(status_code=404, detail="مددجو یافت نشد")
+
+    childNeedy: List[ChildrenOfRegister] = db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).all()
+    children_list = [child.__dict__ for child in childNeedy]
+
+    for child in children_list:
+        child.pop('_sa_instance_state', None)
+
+    return {
+        **needy.__dict__,
+        'children': children_list
+        }
 
 @router.post("/signin-needy", status_code=201)
 def signin_needy(
