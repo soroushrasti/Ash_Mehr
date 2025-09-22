@@ -43,6 +43,11 @@ def delete_admin(
         admin_id: int,
         db: Session = Depends(create_session)
 ):
+    ### check if register with this CreatedbyWhom if that id exists
+    registers = db.query(Register).filter(Register.UnderWhichAdmin == admin_id).all()
+    if registers:
+        raise HTTPException(status_code=400, detail="ابتدا باید مددجویان زیر نظر این نماینده حذف شوند")
+
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="نماینده پیدا نشد")
