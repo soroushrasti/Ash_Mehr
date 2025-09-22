@@ -157,11 +157,11 @@ class Register(Base):
 
 
     def delete_register(self, db_session, register_id):
-        db_session.delete(self)
         childRegister: list[ChildrenOfRegister] = db_session.query(ChildrenOfRegister).filter(
             ChildrenOfRegister.RegisterID == register_id).all()
         for child in childRegister:
             db_session.delete(child)
+        db_session.delete(self)
         db_session.commit()
         return self
 
