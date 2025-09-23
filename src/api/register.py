@@ -95,6 +95,7 @@ def delete_register(
     # first delete children
     db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).delete()
     db.query(Register).filter(Register.RegisterID == register_id).delete()
+    db.commit()
 
 ## find needy people with lat and lng
 @router.get("/find-needy")
