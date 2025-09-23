@@ -74,11 +74,18 @@ def edit_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
+    payload = user_data.dict()
+    children_data = payload.pop("children_of_registre", None)
+    if children_data:
+        for child in children_data:
+            db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == child["RegisterID"]).update(child)
+
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
+
 
 @router.delete("/delete-needy/{register_id}", status_code=200)
 def delete_register(
