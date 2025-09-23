@@ -200,7 +200,7 @@ def _normalize_digit_string(value: str) -> str:
 
 ## create RegisterCreate pydantic model with sqlalchemy_model_to_pydantic
 RegisterCreate = sqlalchemy_model_to_pydantic(Register, exclude=['RegisterID', 'CreatedDate', 'UpdatedDate'])
-ChildrenOfRegisterCreate = sqlalchemy_model_to_pydantic(ChildrenOfRegister, exclude=['ChildrenOfRegisterID', 'CreatedDate', 'UpdatedDate'])
+ChildrenOfRegisterCreate = sqlalchemy_model_to_pydantic(ChildrenOfRegister, exclude=['CreatedDate', 'UpdatedDate'])
 
 # Patched child model to sanitize Age
 class ChildrenOfRegisterCreatePatched(ChildrenOfRegisterCreate):

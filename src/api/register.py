@@ -78,7 +78,7 @@ def edit_register(
     children_data = payload.pop("children_of_registre", None)
     if children_data:
         for child in children_data:
-            db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == child["RegisterID"]).update(child)
+            db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == child["ChildrenOfRegisterID"]).update(child)
 
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
