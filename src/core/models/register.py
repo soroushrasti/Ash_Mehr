@@ -94,6 +94,7 @@ class Register(Base):
 
         return self
 
+
     def edit_register(self, db_session, user_data):
         if user_data.FirstName is not None:
             self.FirstName = user_data.FirstName
@@ -187,6 +188,13 @@ class ChildrenOfRegister(Base):
         self.FirstName = FirstName
         self.LastName = LastName
         self.EducationLevel = EducationLevel
+
+    def create_child_register(self, db_session):
+         db_session.add(self)
+         db_session.commit()
+         db_session.refresh(self)
+
+         return self
 
 # --- Helpers for input normalization ---
 def _normalize_digit_string(value: str) -> str:

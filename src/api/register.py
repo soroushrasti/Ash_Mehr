@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
-from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister
+from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister, \
+    ChildrenOfRegisterCreate
 from src.core.models.admin import Admin
 
 
@@ -68,6 +69,32 @@ def signup_register(
 
     return register
 
+
+@router.post("/signup-child-register", status_code= 201)
+def signup_child_register(
+        user_data: ChildrenOfRegisterCreate | None = Body(None),
+        db: Session = Depends(create_session)
+):
+    # حذف ChildrenOfRegisterID از payload اگر وجود دارد
+    payload = user_data.dict(exclude_unset=True)
+
+    # حذف explicit ChildrenOfRegisterID اگر به اشتباه ارسال شده
+    payload.pop("ChildrenOfRegisterID", None)
+
+    if "Age" in payload:
+        age_val = payload.get("Age")
+        if isinstance(age_val, str):
+            norm = _normalize_digit_string(age_val).strip()
+            if norm.isdigit():
+                payload["Age"] = int(norm)
+            elif norm == "":
+                payload["Age"] = None
+
+        register = ChildrenOfRegister(**payload)
+        register = register.create_child_register(db)
+    return register
+
+
 @router.post("/edit-needy/{register_id}")
 def edit_register(
         register_id: int,
@@ -96,6 +123,14 @@ def delete_register(
     db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).delete()
     db.query(Register).filter(Register.RegisterID == register_id).delete()
     db.commit()
+
+@router.delete("/delete-child-needy/{register_id}", status_code=200)
+def delete_child_register(
+            register_id: int,
+            db: Session = Depends(create_session)
+    ):
+        db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == register_id).delete()
+        db.commit()
 
 ## find needy people with lat and lng
 @router.get("/find-needy")
