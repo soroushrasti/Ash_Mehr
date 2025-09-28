@@ -36,6 +36,7 @@ class Register(Base):
     CreatedBy: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"))
     BirthDate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     UnderWhichAdmin: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
+    UnderSecondAdminID: Mapped[Optional[int]] = mapped_column(ForeignKey("admin.AdminID"), nullable=True)
     Region: Mapped[Optional[str]] = mapped_column()
     Gender: Mapped[Optional[str]] = mapped_column()
     HusbandFirstName: Mapped[Optional[str]] = mapped_column()
@@ -53,7 +54,7 @@ class Register(Base):
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
                  NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
-                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None):
+                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, UnderSecondAdminID: Optional[int] = None):
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -74,7 +75,12 @@ class Register(Base):
             _uwa = UnderWhichAdmin.strip()
             self.UnderWhichAdmin = int(_uwa) if _uwa else None
         else:
-            self.UnderWhichAdmin = UnderWhichAdmin
+            self.UnderSecondAdminID = UnderSecondAdminID
+        if isinstance(UnderSecondAdminID, str):
+              _usa = UnderSecondAdminID.strip()
+              self.UnderSecondAdminID = int(_usa) if _usa else None
+        else:
+              self.UnderSecondAdminID = UnderSecondAdminID
         self.Region = Region
         self.Gender = Gender
         self.HusbandFirstName = HusbandFirstName
@@ -128,6 +134,13 @@ class Register(Base):
                 self.UnderWhichAdmin = int(_uwa) if _uwa else None
             else:
                 self.UnderWhichAdmin = uwa
+            if getattr(user_data, 'UnderSecondAdminID', None) is not None:
+                usa = user_data.UnderSecondAdminID
+                if isinstance(usa, str):
+                    _usa = usa.strip()
+                    self.UnderSecondAdminID = int(_usa) if _usa else None
+                else:
+                    self.UnderSecondAdminID = usa
         if user_data.Region is not None:
             self.Region = user_data.Region
         if user_data.Gender is not None:
