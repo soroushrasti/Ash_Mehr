@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
-from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate
+from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister, \
+    ChildrenOfRegisterCreate
 from src.core.models.admin import Admin
 
 
@@ -17,18 +18,82 @@ class MapPoint(BaseModel):
     info: Optional[str] = None
 
 
+def _normalize_digit_string(value: str):
+    if not isinstance(value, str):
+        return value
+    return value.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
+
+
 @router.post("/signup-register", status_code=201)
 def signup_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    if user_data.Phone is not None:
-      rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
-      if rregister is not None:
-          raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
-    payload = user_data.dict() if user_data else {}
+    if not user_data:
+        raise HTTPException(status_code=400, detail="Payload required")
+    if user_data.Phone is not None and user_data.Phone != "":
+        rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
+        if rregister is not None:
+            raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+
+    payload = user_data.dict()
+    children_data = payload.pop("children_of_registre", None)
+
+    # 1. Create parent first (use existing helper method for consistency)
     register = Register(**payload)
-    return register.create_register(db)
+    register = register.create_register(db)  # assumes this commits & refreshes
+
+    # 2. Now persist children with correct FK
+    if children_data:
+        try:
+            for child in children_data:
+                # Remove any incoming incorrect keys
+                child.pop("ChildrenOfRegisterID", None)
+                child["RegisterID"] = register.RegisterID  # enforce FK
+                # Normalize Age (Persian digits -> int or None)
+                if "Age" in child:
+                    age_val = child.get("Age")
+                    if isinstance(age_val, str):
+                        norm = _normalize_digit_string(age_val).strip()
+                        if norm.isdigit():
+                            child["Age"] = int(norm)
+                        elif norm == "":
+                            child["Age"] = None
+                child_obj = ChildrenOfRegister(**child)
+                db.add(child_obj)
+            db.commit()
+        except Exception:
+            db.rollback()
+            # Optional: could also delete the parent if atomicity across parent/children is required
+            raise HTTPException(status_code=500, detail="خطا در ثبت فرزندان")
+
+    return register
+
+
+@router.post("/signup-child-register", status_code= 201)
+def signup_child_register(
+        user_data: ChildrenOfRegisterCreate | None = Body(None),
+        db: Session = Depends(create_session)
+):
+    # حذف ChildrenOfRegisterID از payload اگر وجود دارد
+    payload = user_data.dict(exclude_unset=True)
+
+    # حذف explicit ChildrenOfRegisterID اگر به اشتباه ارسال شده
+    payload.pop("ChildrenOfRegisterID", None)
+
+    if "Age" in payload:
+        age_val = payload.get("Age")
+        if isinstance(age_val, str):
+            norm = _normalize_digit_string(age_val).strip()
+            if norm.isdigit():
+                payload["Age"] = int(norm)
+            elif norm == "":
+                payload["Age"] = None
+
+        register = ChildrenOfRegister(**payload)
+        register = register.create_child_register(db)
+    return register
+
 
 @router.post("/edit-needy/{register_id}")
 def edit_register(
@@ -36,19 +101,36 @@ def edit_register(
         user_data: RegisterCreateWithChildren | None = Body(None),
         db: Session = Depends(create_session)
 ):
+    payload = user_data.dict()
+    children_data = payload.pop("children_of_registre", None)
+    if children_data:
+        for child in children_data:
+            db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == child["ChildrenOfRegisterID"]).update(child)
+
     register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="مدد جو پیدا نشد")
     else:
         return register.edit_register(db_session=db, user_data=user_data or RegisterCreate())
 
+
 @router.delete("/delete-needy/{register_id}", status_code=200)
 def delete_register(
         register_id: int,
         db: Session = Depends(create_session)
 ):
-    register: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
-    return register.delete_register(db,register_id)
+    # first delete children
+    db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).delete()
+    db.query(Register).filter(Register.RegisterID == register_id).delete()
+    db.commit()
+
+@router.delete("/delete-child-needy/{register_id}", status_code=200)
+def delete_child_register(
+            register_id: int,
+            db: Session = Depends(create_session)
+    ):
+        db.query(ChildrenOfRegister).filter(ChildrenOfRegister.ChildrenOfRegisterID == register_id).delete()
+        db.commit()
 
 ## find needy people with lat and lng
 @router.get("/find-needy")
@@ -161,7 +243,19 @@ def get_needy(
         db: Session = Depends(create_session)
 ):
     needy: Register = db.query(Register).filter(Register.RegisterID == register_id).first()
-    return needy
+    if not needy:
+        raise HTTPException(status_code=404, detail="مددجو یافت نشد")
+
+    childNeedy: List[ChildrenOfRegister] = db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).all()
+    children_list = [child.__dict__ for child in childNeedy]
+
+    for child in children_list:
+        child.pop('_sa_instance_state', None)
+
+    return {
+        **needy.__dict__,
+        'children': children_list
+        }
 
 @router.post("/signin-needy", status_code=201)
 def signin_needy(

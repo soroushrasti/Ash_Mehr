@@ -29,7 +29,7 @@ def signup_admin(
         user_data: AdminCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    if user_data.Phone is not None:
+    if user_data.Phone is not None and user_data.Phone != "":
         radmin: Admin = db.query(Admin).filter(Admin.Phone == user_data.Phone).first()
         if radmin is not None:
             raise HTTPException(status_code=409, detail="نماینده با این شماره تلفن قبلا ثبت نام کرده است")
@@ -43,6 +43,11 @@ def delete_admin(
         admin_id: int,
         db: Session = Depends(create_session)
 ):
+    ### check if register with this CreatedbyWhom if that id exists
+    registers = db.query(Register).filter(Register.UnderWhichAdmin == admin_id).all()
+    if registers:
+        raise HTTPException(status_code=400, detail="ابتدا باید مددجویان زیر نظر این نماینده حذف شوند")
+
     admin: Admin = db.query(Admin).filter(Admin.AdminID == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="نماینده پیدا نشد")
