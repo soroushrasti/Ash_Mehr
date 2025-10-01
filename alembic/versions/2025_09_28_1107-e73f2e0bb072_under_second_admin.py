@@ -14,7 +14,6 @@ depends_on = None
 def upgrade() -> None:
     # استفاده از batch mode برای SQLite
     with op.batch_alter_table('admin') as batch_op:
-        batch_op.add_column(sa.Column('CreatedBy', sa.Integer(), nullable=True))
         batch_op.create_foreign_key(
             'fk_admin_created_by',
             'admin',
