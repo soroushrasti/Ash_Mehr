@@ -2,10 +2,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from src.core.models import Base, sqlalchemy_model_to_pydantic
-from src.core.models.register import Register
-from src.core.models.admin import Admin
 from datetime import datetime
 from typing import Optional
+
+from src.core.models.admin import Admin
+from src.core.models.register import Register
 
 class Good(Base):
     __tablename__ = "good"
@@ -17,21 +18,27 @@ class Good(Base):
     CreatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     UpdatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
     # Relationships (optional, for ORM navigation)
-    register: Mapped[Register] = relationship("Register")
     admin: Mapped[Admin] = relationship("Admin")
+    register: Mapped[Register] = relationship("Register")
 
     ### create __init__ method to create an good
     def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None):
         self.TypeGood = TypeGood
-        self.NumberGood = NumberGood
-        self.GivenToWhome = GivenToWhome
-        self.GivenBy = GivenBy
-
-    def create_good(self, db_session):
-         db_session.add(self)
-         db_session.commit()
-         db_session.refresh(self)
-         return self
+        if isinstance(NumberGood, str):
+            _ng = NumberGood.strip()
+            self.NumberGood = int(_ng) if _ng else None
+        else:
+            self.NumberGood = NumberGood
+        if isinstance(GivenToWhome, str):
+            _gt = GivenToWhome.strip()
+            self.GivenToWhome = int(_gt) if _gt else None
+        else:
+            self.GivenToWhome = GivenToWhome
+        if isinstance(GivenBy, str):
+            _gb = GivenBy.strip()
+            self.GivenBy = int(_gb) if _gb else None
+        else:
+            self.GivenBy = GivenBy
 
     def edit_good(self, db_session, user_data):
         if user_data.TypeGood is not None:

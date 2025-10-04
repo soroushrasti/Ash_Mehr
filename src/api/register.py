@@ -2,12 +2,15 @@ from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
-from sqlalchemy import func, literal, cast, Float
+from sqlalchemy import func, literal, cast, Float, except_
 from src.api import router
 from src.config.database import create_session
-from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister, \
+from src.core.models.good import Good, GoodCreate
+from src.core.models.register import Register, RegisterCreate, ChildrenOfRegister, \
     ChildrenOfRegisterCreate
 from src.core.models.admin import Admin
+from src.objMoldel import RegisterCreateWithChildren
+from datetime import datetime
 
 
 class MapPoint(BaseModel):
@@ -38,6 +41,7 @@ def signup_register(
 
     payload = user_data.dict()
     children_data = payload.pop("children_of_registre", None)
+    goods_data = payload.pop("goods_of_registre", None)
 
     # 1. Create parent first (use existing helper method for consistency)
     register = Register(**payload)
@@ -66,6 +70,18 @@ def signup_register(
             db.rollback()
             # Optional: could also delete the parent if atomicity across parent/children is required
             raise HTTPException(status_code=500, detail="خطا در ثبت فرزندان")
+
+    if goods_data:
+        try:
+            for good in goods_data:
+                good["GivenToWhome"] = register.RegisterID
+                good_obj = Good(**good)
+                db.add(good_obj)
+            db.commit()
+
+        except Exception:
+                db.rollback()
+                raise HTTPException(status_code=500, detail="خطا در ثبت کمک ها")
 
     return register
 
