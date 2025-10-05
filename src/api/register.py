@@ -1,16 +1,17 @@
+from datetime import datetime, timezone
+
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
-from sqlalchemy import func, literal, cast, Float, except_
+from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
-from src.core.models.good import Good, GoodCreate
+from src.core.models.good import Good
 from src.core.models.register import Register, RegisterCreate, ChildrenOfRegister, \
     ChildrenOfRegisterCreate
 from src.core.models.admin import Admin
-from src.objMoldel import RegisterCreateWithChildren
-from datetime import datetime
+from src.objModel import RegisterCreateWithChildren
 
 
 class MapPoint(BaseModel):
@@ -75,13 +76,15 @@ def signup_register(
         try:
             for good in goods_data:
                 good["GivenToWhome"] = register.RegisterID
+                good["UpdatedDate"] = datetime.now(timezone.utc)
                 good_obj = Good(**good)
                 db.add(good_obj)
             db.commit()
 
-        except Exception:
-                db.rollback()
-                raise HTTPException(status_code=500, detail="خطا در ثبت کمک ها")
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=  "خطا در ثبت کمک ها")
+            print(str(e))
 
     return register
 
@@ -233,6 +236,7 @@ def info_needy(
             Register.FirstName,
             Register.LastName,
             Register.CreatedDate,
+            Good.GoodID,
         )
         .order_by(Register.CreatedDate.desc())
         .limit(1)
@@ -244,6 +248,7 @@ def info_needy(
             "numberNeedyPersons": 0,
             "LastNeedycreatedTime": None,
             "LastNeedyNameCreated": None,
+            "GoodId": None,
         }
 
     name = " ".join([v for v in [top.FirstName, top.LastName] if v]).strip() or None
@@ -251,6 +256,7 @@ def info_needy(
         "numberNeedyPersons": top.total,
         "LastNeedycreatedTime": top.CreatedDate,
         "LastNeedyNameCreated": name,
+        "GoodId": top.GoodID,
     }
 
 @ router.get("/get-needy/{register_id}")

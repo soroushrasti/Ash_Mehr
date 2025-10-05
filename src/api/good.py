@@ -6,7 +6,7 @@ from src.config.database import create_session
 from src.core.models.good import Good, GoodCreate
 
 
-@router.post("/get-goods/{register_id}", status_code=201)
+@router.get("/get-goods/{register_id}", status_code=201)
 def get_good(
         register_id: int,
         db: Session = Depends(create_session)

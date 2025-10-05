@@ -16,14 +16,15 @@ class Good(Base):
     GivenToWhome: Mapped[int] = mapped_column(ForeignKey("register.RegisterID"))
     GivenBy: Mapped[int] = mapped_column(ForeignKey("admin.AdminID"))
     CreatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    UpdatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    UpdatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True),  server_default=func.now(),onupdate=func.now())
     # Relationships (optional, for ORM navigation)
     admin: Mapped[Admin] = relationship("Admin")
     register: Mapped[Register] = relationship("Register")
 
     ### create __init__ method to create an good
-    def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None):
+    def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None, UpdatedDate: Optional[datetime] = None):
         self.TypeGood = TypeGood
+        self.UpdatedDate = UpdatedDate
         if isinstance(NumberGood, str):
             _ng = NumberGood.strip()
             self.NumberGood = int(_ng) if _ng else None
