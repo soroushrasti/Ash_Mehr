@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -21,11 +23,29 @@ def edit_good(
         user_data: GoodCreate | None = Body(None),
         db: Session = Depends(create_session)
 ):
-    goods : List[Good] = db.query(Good).filter(Good.GivenToWhome == register_id).all()
+    goods: List[Good] = db.query(Good).filter(Good.GivenToWhome == register_id).all()
     if not goods:
         raise HTTPException(status_code=404, detail="کالا پیدا نشد")
-    else:
-        for good in goods:
-            db.query(Good).filter(Good.GoodID == good.GoodID).delete()
-            good.edit_good(db_session=db, user_data=user_data or GoodCreate())
-    return goods
+    for good in goods:
+         db.query(Good).filter(Good.GoodID == good.GoodID).delete()
+    db.commit()
+    payload = user_data.dict()
+    payload['GivenToWhome'] = register_id
+    for good in payload:
+        newGood = Good(**good)
+        db.add(newGood)
+    db.commit()
+
+    return [newGood]
+
+@router.post("/add-good")
+def add_good(
+        user_data: GoodCreate | None = Body(None),
+        db: Session = Depends(create_session)
+):
+    payload = user_data.dict()
+    payload["UpdatedDate"] = datetime.now(timezone.utc)
+    good = Good(**payload)
+    db.add(good)
+    db.commit()
+    return good

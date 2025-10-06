@@ -54,4 +54,4 @@ class Good(Base):
         db_session.refresh(self)
         return self
 
-GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate', 'UpdatedDate'])
+GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate'])
