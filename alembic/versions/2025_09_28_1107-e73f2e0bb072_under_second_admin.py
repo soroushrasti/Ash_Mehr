@@ -20,7 +20,6 @@ def upgrade() -> None:
             ['CreatedBy'],
             ['AdminID']
         )
-        batch_op.drop_column('BirthDate')
 
     with op.batch_alter_table('register') as batch_op:
         batch_op.add_column(sa.Column('UnderSecondAdminID', sa.Integer(), nullable=True))
