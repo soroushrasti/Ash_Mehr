@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
-from src.core.models import Base, sqlalchemy_model_to_pydantic
+from src.core.models import Base, sqlalchemy_model_to_pydantic, sqlalchemy_model_to_pydantic_named
 from datetime import datetime
 from typing import Optional
 
@@ -55,3 +55,5 @@ class Good(Base):
         return self
 
 GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate'])
+# New model that allows GoodID for upsert operations
+GoodUpsert = sqlalchemy_model_to_pydantic_named(Good, "GoodUpsert", exclude=['CreatedDate'])
