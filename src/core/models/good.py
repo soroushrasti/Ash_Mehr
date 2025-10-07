@@ -13,7 +13,7 @@ class Good(Base):
     __tablename__ = "good"
     GoodID: Mapped[int] = mapped_column(primary_key=True, index=True)
     TypeGood: Mapped[str] = mapped_column(String, index=True)
-    NumberGood: Mapped[int] = mapped_column(Integer)
+    NumberGood: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     GivenToWhome: Mapped[int] = mapped_column(ForeignKey("register.RegisterID"))
     GivenBy: Mapped[int] = mapped_column(ForeignKey("admin.AdminID"))
     CreatedDate: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -30,7 +30,7 @@ class Good(Base):
             _ng = NumberGood.strip()
             try:
                 self.NumberGood = int(_ng) if _ng else None
-            except:
+            except ValueError:
                 self.NumberGood = None
         else:
             self.NumberGood = NumberGood
@@ -59,9 +59,31 @@ class Good(Base):
         return self
 
 GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate'])
+GoodUpsert = sqlalchemy_model_to_pydantic_named(Good, "GoodUpsert", exclude=['CreatedDate'])
 
-# Flexible create accepting string digits (including Persian) or int
 class GoodCreateFlexible(GoodCreate):
+    NumberGood: int | str | None = None
+
+    @field_validator("NumberGood", mode="before")
+    @classmethod
+    def normalize_number_good(cls, v):
+        if v is None:
+            return v
+        if isinstance(v, int):
+            return v
+        if isinstance(v, str):
+            # Normalize Persian/Arabic digits to ASCII
+            trans = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+            cleaned = v.translate(trans).strip()
+            if cleaned.isdigit():
+                try:
+                    return int(cleaned)
+                except ValueError:
+                    return None
+            return None
+        return None
+
+class GoodUpsertFlexible(GoodUpsert):
     NumberGood: int | str | None = None
 
     @field_validator("NumberGood", mode="before")
