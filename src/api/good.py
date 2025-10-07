@@ -2,10 +2,14 @@ from datetime import datetime, timezone
 
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Union
 from src.api import router
 from src.config.database import create_session
+from src.core.models import sqlalchemy_model_to_pydantic_named
 from src.core.models.good import Good, GoodCreate
+
+GoodUpsert = sqlalchemy_model_to_pydantic_named(Good, "GoodUpsert", exclude=['CreatedDate'])
+
 
 
 @router.get("/get-goods/{register_id}", status_code=201)
@@ -20,11 +24,19 @@ def get_good(
 @router.post("/edit-good/{register_id}")
 def edit_good(
         register_id: int,
-        user_data= Body(None),
+        user_data: Union[GoodUpsert, List[GoodUpsert]] | None = Body(None),
         db: Session = Depends(create_session)
 ):
     if user_data is None:
         raise HTTPException(status_code=400, detail="Payload لازم است")
+
+    # Normalize to list
+    if isinstance(user_data, GoodUpsert):
+        items: List[GoodUpsert] = [user_data]
+    else:
+        items = list(user_data)
+    if len(items) == 0:
+        return []
 
     existing_goods = db.query(Good).filter(Good.GivenToWhome == register_id).all()
     existing_by_id = {g.GoodID: g for g in existing_goods}
@@ -32,7 +44,7 @@ def edit_good(
     received_ids: set[int] = set()
     now = datetime.now(timezone.utc)
 
-    for item in user_data:
+    for item in items:
         data = item.model_dump(exclude_unset=True)
         good_id = data.get("GoodID")
         if isinstance(good_id, int) and good_id in existing_by_id:
@@ -42,7 +54,11 @@ def edit_good(
             if "NumberGood" in data and data["NumberGood"] is not None:
                 good_obj.NumberGood = data["NumberGood"]
             if "GivenBy" in data and data["GivenBy"] is not None:
-                good_obj.GivenBy = data["GivenBy"]
+                # Cast if came as string
+                try:
+                    good_obj.GivenBy = int(data["GivenBy"])
+                except (TypeError, ValueError):
+                    pass
             good_obj.UpdatedDate = now
             received_ids.add(good_id)
         else:
@@ -50,9 +66,14 @@ def edit_good(
                 "TypeGood": data.get("TypeGood"),
                 "NumberGood": data.get("NumberGood"),
                 "GivenToWhome": register_id,
-                "GivenBy": data.get("GivenBy"),
+                "GivenBy": None,
                 "UpdatedDate": now,
             }
+            if "GivenBy" in data and data["GivenBy"] is not None:
+                try:
+                    new_payload["GivenBy"] = int(data["GivenBy"])
+                except (TypeError, ValueError):
+                    new_payload["GivenBy"] = None
             new_good = Good(**new_payload)
             db.add(new_good)
             db.flush()
@@ -66,5 +87,3 @@ def edit_good(
 
     updated_goods = db.query(Good).filter(Good.GivenToWhome == register_id).all()
     return updated_goods
-
-

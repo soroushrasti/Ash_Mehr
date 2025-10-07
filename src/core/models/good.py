@@ -59,8 +59,6 @@ class Good(Base):
         return self
 
 GoodCreate = sqlalchemy_model_to_pydantic(Good, exclude=['GoodID', 'CreatedDate'])
-# New model that allows GoodID for upsert operations
-GoodUpsert = sqlalchemy_model_to_pydantic_named(Good, "GoodUpsert", exclude=['CreatedDate'])
 
 # Flexible create accepting string digits (including Persian) or int
 class GoodCreateFlexible(GoodCreate):
