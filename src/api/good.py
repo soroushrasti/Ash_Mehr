@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from src.api import router
 from src.config.database import create_session
-from src.core.models.good import Good, GoodCreate, GoodUpsert
+from src.core.models.good import Good, GoodCreate
 
 
 @router.get("/get-goods/{register_id}", status_code=201)
@@ -20,7 +20,7 @@ def get_good(
 @router.post("/edit-good/{register_id}")
 def edit_good(
         register_id: int,
-        user_data: List[GoodUpsert] | None = Body(None),
+        user_data= Body(None),
         db: Session = Depends(create_session)
 ):
     if user_data is None:

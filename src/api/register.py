@@ -139,6 +139,7 @@ def delete_register(
         db: Session = Depends(create_session)
 ):
     # first delete children
+    db.query(Good).filter(Good.GivenToWhome == register_id).delete()
     db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).delete()
     db.query(Register).filter(Register.RegisterID == register_id).delete()
     db.commit()
