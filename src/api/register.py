@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Counter
 from pydantic import BaseModel
 from sqlalchemy import func, literal, cast, Float
 from src.api import router
@@ -293,3 +293,97 @@ def signin_needy(
         "needyID": needy.RegisterID,
         "name": name,
     }
+
+
+@router.get("/register-stats")
+def register_stats(
+        db: Session = Depends(create_session)
+):
+    # گرفتن تمام رجیسترها از دیتابیس
+    registers = db.query(Register).all()
+
+    # شمارش تعداد رجیسترها بر اساس admin_id
+    admin_counts = Counter(register.CreatedBy for register in registers)
+    # شمارش تعداد رجیسترها بر اساس استان
+    province_counts = Counter(register.Province for register in registers)
+    # شمارش تعداد رجیسترها بر اساس سطح تحصیلات
+    education_level_counts = Counter(register.EducationLevel for register in registers)
+
+    number_good_counts = dict(
+        db.query(Good.NumberGood, func.count(Register.RegisterID))
+        .join(Register, Good.GivenToWhome == Register.RegisterID)
+        .group_by(Good.NumberGood)
+        .all()
+    )
+
+    # تعداد رجیسترها بر اساس TypeGood
+    type_good_counts = dict(
+        db.query(Good.TypeGood, func.count(Register.RegisterID))
+        .join(Register, Good.GivenToWhome == Register.RegisterID)
+        .group_by(Good.TypeGood)
+        .all()
+    )
+
+    number_of_children_counts = dict(
+        db.query(ChildrenOfRegister.RegisterID, func.count(Register.RegisterID))
+        .join(Register, ChildrenOfRegister.RegisterID == Register.RegisterID)
+        .group_by(ChildrenOfRegister.RegisterID)
+        .all()
+    )
+  
+    filtered_keys = [key for key in education_level_counts.keys()
+                     if key is not None and str(key).strip() != '']
+
+    # تبدیل به فرمت مناسب برای نمودار
+    chart_data = {
+        'adminStats': {
+            'labels': list(admin_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس نماینده',
+                'data': list(admin_counts.values()),
+                'backgroundColor': '#4CAF50'
+            }]
+        },
+        'provinceStats': {
+            'labels': list(province_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس استان',
+                'data': list(province_counts.values()),
+                'backgroundColor': '#2196F3'
+            }]
+        },
+        'educationLevelStats': {
+            'labels': filtered_keys,
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس سطح تحصیلات',
+                'data': [education_level_counts[key] for key in filtered_keys],
+                'backgroundColor': '#2196F3'
+            }]
+        },
+        'numberGoodStats': {
+            'labels': list(number_good_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس مقدار کمک',
+                'data': list(number_good_counts.values()),
+                'backgroundColor': '#FF9800'
+            }]
+        },
+        'typeGoodStats': {
+            'labels': list(type_good_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس نوع کمک',
+                'data': list(type_good_counts.values()),
+                'backgroundColor': '#9C27B0'
+            }]
+        },
+        'childrenNumberStats': {
+            'labels': list(number_of_children_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس تعداد فرزندان',
+                'data': list(number_of_children_counts.values()),
+                'backgroundColor': '#9C27B0'
+            }]
+        }
+    }
+
+    return chart_data
