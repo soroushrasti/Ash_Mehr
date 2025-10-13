@@ -1,13 +1,17 @@
+from datetime import datetime, timezone
+
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Counter
 from pydantic import BaseModel
 from sqlalchemy import func, literal, cast, Float
 from src.api import router
 from src.config.database import create_session
-from src.core.models.register import Register, RegisterCreateWithChildren, RegisterCreate, ChildrenOfRegister, \
+from src.core.models.good import Good
+from src.core.models.register import Register, RegisterCreate, ChildrenOfRegister, \
     ChildrenOfRegisterCreate
 from src.core.models.admin import Admin
+from src.objModel import RegisterCreateWithChildren
 
 
 class MapPoint(BaseModel):
@@ -38,6 +42,7 @@ def signup_register(
 
     payload = user_data.dict()
     children_data = payload.pop("children_of_registre", None)
+    goods_data = payload.pop("goods_of_registre", None)
 
     # 1. Create parent first (use existing helper method for consistency)
     register = Register(**payload)
@@ -66,6 +71,20 @@ def signup_register(
             db.rollback()
             # Optional: could also delete the parent if atomicity across parent/children is required
             raise HTTPException(status_code=500, detail="خطا در ثبت فرزندان")
+
+    if goods_data:
+        try:
+            for good in goods_data:
+                good["GivenToWhome"] = register.RegisterID
+                good["UpdatedDate"] = datetime.now(timezone.utc)
+                good_obj = Good(**good)
+                db.add(good_obj)
+            db.commit()
+
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=  "خطا در ثبت کمک ها")
+            print(str(e))
 
     return register
 
@@ -120,6 +139,7 @@ def delete_register(
         db: Session = Depends(create_session)
 ):
     # first delete children
+    db.query(Good).filter(Good.GivenToWhome == register_id).delete()
     db.query(ChildrenOfRegister).filter(ChildrenOfRegister.RegisterID == register_id).delete()
     db.query(Register).filter(Register.RegisterID == register_id).delete()
     db.commit()
@@ -211,30 +231,33 @@ def find_needy(
 def info_needy(
         db: Session = Depends(create_session)
 ):
-    top = (
-        db.query(
-            func.count().over().label("total"),
-            Register.FirstName,
-            Register.LastName,
-            Register.CreatedDate,
-        )
+    # Get total count of registers
+    total_count = db.query(func.count(Register.RegisterID)).scalar() or 0
+
+    # Get last created register
+    last_register = (
+        db.query(Register.FirstName, Register.LastName, Register.CreatedDate)
         .order_by(Register.CreatedDate.desc())
-        .limit(1)
         .first()
     )
 
-    if not top:
+    if not last_register:
         return {
             "numberNeedyPersons": 0,
             "LastNeedycreatedTime": None,
             "LastNeedyNameCreated": None,
+            "GoodId": None,
         }
 
-    name = " ".join([v for v in [top.FirstName, top.LastName] if v]).strip() or None
+    # Get last created good (if needed for this register)
+    last_good = db.query(Good.GoodID).order_by(Good.CreatedDate.desc()).first()
+
+    name = " ".join([v for v in [last_register.FirstName, last_register.LastName] if v]).strip() or None
     return {
-        "numberNeedyPersons": top.total,
-        "LastNeedycreatedTime": top.CreatedDate,
+        "numberNeedyPersons": total_count,
+        "LastNeedycreatedTime": last_register.CreatedDate,
         "LastNeedyNameCreated": name,
+        "GoodId": last_good.GoodID if last_good else None,
     }
 
 @ router.get("/get-needy/{register_id}")
@@ -270,3 +293,131 @@ def signin_needy(
         "needyID": needy.RegisterID,
         "name": name,
     }
+
+
+@router.get("/register-stats")
+def register_stats(
+        db: Session = Depends(create_session)
+):
+    # گرفتن تمام رجیسترها از دیتابیس
+    registers = db.query(Register).all()
+
+    # شمارش تعداد رجیسترها بر اساس admin name (not ID)
+    admin_counts_query = (
+        db.query(
+            func.concat(
+                func.coalesce(Admin.FirstName, ""),
+                literal(" "),
+                func.coalesce(Admin.LastName, "")
+            ).label("admin_name"),
+            func.count(Register.RegisterID).label("count")
+        )
+        .join(Admin, Register.UnderWhichAdmin == Admin.AdminID)
+        .group_by(Admin.AdminID, Admin.FirstName, Admin.LastName)
+        .all()
+    )
+    admin_counts = {row.admin_name.strip() or f"Admin {idx}": row.count for idx, row in enumerate(admin_counts_query, 1)}
+
+    # شمارش تعداد رجیسترها بر اساس استان
+    province_counts = Counter(register.Province for register in registers)
+    # شمارش تعداد رجیسترها بر اساس سطح تحصیلات
+    education_level_counts = Counter(register.EducationLevel for register in registers)
+
+    # تعداد رجیسترها بر اساس TypeGood
+    type_good_counts = dict(
+        db.query(Good.TypeGood, func.count(Register.RegisterID))
+        .join(Register, Good.GivenToWhome == Register.RegisterID)
+        .group_by(Good.TypeGood)
+        .all()
+    )
+
+    ## x  number of children counts unique until max children we have for a registerID 0,1,2,3,4
+    ##  y number of register with that number of children
+
+    # Subquery: count children per register
+    children_per_register = (
+        db.query(
+            ChildrenOfRegister.RegisterID,
+            func.count(ChildrenOfRegister.ChildrenOfRegisterID).label('child_count')
+        )
+        .group_by(ChildrenOfRegister.RegisterID)
+        .subquery()
+    )
+
+    # Count how many registers have each number of children (including 0)
+    # First get registers with children
+    registers_with_children = dict(
+        db.query(
+            children_per_register.c.child_count,
+            func.count(children_per_register.c.RegisterID)
+        )
+        .group_by(children_per_register.c.child_count)
+        .all()
+    )
+
+    # Count registers with 0 children (not in children_of_register table)
+    total_registers = db.query(func.count(Register.RegisterID)).scalar() or 0
+    registers_with_children_count = db.query(func.count(func.distinct(ChildrenOfRegister.RegisterID))).scalar() or 0
+    registers_with_zero_children = total_registers - registers_with_children_count
+
+    # Combine: add 0 children count
+    number_of_children_counts = {0: registers_with_zero_children}
+    number_of_children_counts.update(registers_with_children)
+
+    education_levels = [
+        'Kindergarten',
+        'Primary',
+        'Secondary',
+        'High School',
+        'Diploma',
+        'Associate Degree',
+        'Bachelor',
+        'Master',
+        'PhD'
+    ]
+
+    # تبدیل به فرمت مناسب برای نمودار
+    chart_data = {
+        'adminStats': {
+            'labels': list(admin_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس نماینده',
+                'data': list(admin_counts.values()),
+                'backgroundColor': '#4CAF50'
+            }]
+        },
+        'provinceStats': {
+            'labels': list(province_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس استان',
+                'data': list(province_counts.values()),
+                'backgroundColor': '#2196F3'
+            }]
+        },
+        'educationLevelStats': {
+            'labels': education_levels,
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس سطح تحصیلات',
+                'data':  [education_level_counts.get(key, 0) for key in education_levels],
+                'backgroundColor': '#2196F3'
+            }]
+        },
+        'typeGoodStats': {
+            'labels': list(type_good_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس نوع کمک',
+                'data': list(type_good_counts.values()),
+                'backgroundColor': '#9C27B0'
+            }]
+        },
+        'childrenNumberStats': {
+            'labels': list(number_of_children_counts.keys()),
+            'datasets': [{
+                'label': 'تعداد رجیسترها بر اساس تعداد فرزندان',
+                'data': list(number_of_children_counts.values()),
+                'backgroundColor': '#9C27B0'
+            }]
+        }
+    }
+
+    return chart_data
