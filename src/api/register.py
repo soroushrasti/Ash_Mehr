@@ -302,8 +302,22 @@ def register_stats(
     # گرفتن تمام رجیسترها از دیتابیس
     registers = db.query(Register).all()
 
-    # شمارش تعداد رجیسترها بر اساس admin_id
-    admin_counts = Counter(register.CreatedBy for register in registers)
+    # شمارش تعداد رجیسترها بر اساس admin name (not ID)
+    admin_counts_query = (
+        db.query(
+            func.concat(
+                func.coalesce(Admin.FirstName, ""),
+                literal(" "),
+                func.coalesce(Admin.LastName, "")
+            ).label("admin_name"),
+            func.count(Register.RegisterID).label("count")
+        )
+        .join(Admin, Register.UnderWhichAdmin == Admin.AdminID)
+        .group_by(Admin.AdminID, Admin.FirstName, Admin.LastName)
+        .all()
+    )
+    admin_counts = {row.admin_name.strip() or f"Admin {idx}": row.count for idx, row in enumerate(admin_counts_query, 1)}
+
     # شمارش تعداد رجیسترها بر اساس استان
     province_counts = Counter(register.Province for register in registers)
     # شمارش تعداد رجیسترها بر اساس سطح تحصیلات
@@ -324,13 +338,39 @@ def register_stats(
         .all()
     )
 
-    number_of_children_counts = dict(
-        db.query(ChildrenOfRegister.RegisterID, func.count(Register.RegisterID))
-        .join(Register, ChildrenOfRegister.RegisterID == Register.RegisterID)
+    ## x  number of children counts unique until max children we have for a registerID 0,1,2,3,4
+    ##  y number of register with that number of children
+
+    # Subquery: count children per register
+    children_per_register = (
+        db.query(
+            ChildrenOfRegister.RegisterID,
+            func.count(ChildrenOfRegister.ChildrenOfRegisterID).label('child_count')
+        )
         .group_by(ChildrenOfRegister.RegisterID)
+        .subquery()
+    )
+
+    # Count how many registers have each number of children (including 0)
+    # First get registers with children
+    registers_with_children = dict(
+        db.query(
+            children_per_register.c.child_count,
+            func.count(children_per_register.c.RegisterID)
+        )
+        .group_by(children_per_register.c.child_count)
         .all()
     )
-  
+
+    # Count registers with 0 children (not in children_of_register table)
+    total_registers = db.query(func.count(Register.RegisterID)).scalar() or 0
+    registers_with_children_count = db.query(func.count(func.distinct(ChildrenOfRegister.RegisterID))).scalar() or 0
+    registers_with_zero_children = total_registers - registers_with_children_count
+
+    # Combine: add 0 children count
+    number_of_children_counts = {0: registers_with_zero_children}
+    number_of_children_counts.update(registers_with_children)
+
     filtered_keys = [key for key in education_level_counts.keys()
                      if key is not None and str(key).strip() != '']
 
