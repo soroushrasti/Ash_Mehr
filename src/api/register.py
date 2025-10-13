@@ -231,20 +231,17 @@ def find_needy(
 def info_needy(
         db: Session = Depends(create_session)
 ):
-    top = (
-        db.query(
-            func.count().over().label("total"),
-            Register.FirstName,
-            Register.LastName,
-            Register.CreatedDate,
-            Good.GoodID,
-        )
+    # Get total count of registers
+    total_count = db.query(func.count(Register.RegisterID)).scalar() or 0
+
+    # Get last created register
+    last_register = (
+        db.query(Register.FirstName, Register.LastName, Register.CreatedDate)
         .order_by(Register.CreatedDate.desc())
-        .limit(1)
         .first()
     )
 
-    if not top:
+    if not last_register:
         return {
             "numberNeedyPersons": 0,
             "LastNeedycreatedTime": None,
@@ -252,12 +249,15 @@ def info_needy(
             "GoodId": None,
         }
 
-    name = " ".join([v for v in [top.FirstName, top.LastName] if v]).strip() or None
+    # Get last created good (if needed for this register)
+    last_good = db.query(Good.GoodID).order_by(Good.CreatedDate.desc()).first()
+
+    name = " ".join([v for v in [last_register.FirstName, last_register.LastName] if v]).strip() or None
     return {
-        "numberNeedyPersons": top.total,
-        "LastNeedycreatedTime": top.CreatedDate,
+        "numberNeedyPersons": total_count,
+        "LastNeedycreatedTime": last_register.CreatedDate,
         "LastNeedyNameCreated": name,
-        "GoodId": top.GoodID,
+        "GoodId": last_good.GoodID if last_good else None,
     }
 
 @ router.get("/get-needy/{register_id}")
