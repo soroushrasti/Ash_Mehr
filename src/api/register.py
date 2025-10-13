@@ -323,13 +323,6 @@ def register_stats(
     # شمارش تعداد رجیسترها بر اساس سطح تحصیلات
     education_level_counts = Counter(register.EducationLevel for register in registers)
 
-    number_good_counts = dict(
-        db.query(Good.NumberGood, func.count(Register.RegisterID))
-        .join(Register, Good.GivenToWhome == Register.RegisterID)
-        .group_by(Good.NumberGood)
-        .all()
-    )
-
     # تعداد رجیسترها بر اساس TypeGood
     type_good_counts = dict(
         db.query(Good.TypeGood, func.count(Register.RegisterID))
@@ -371,8 +364,17 @@ def register_stats(
     number_of_children_counts = {0: registers_with_zero_children}
     number_of_children_counts.update(registers_with_children)
 
-    filtered_keys = [key for key in education_level_counts.keys()
-                     if key is not None and str(key).strip() != '']
+    education_levels = [
+        'Kindergarten',
+        'Primary',
+        'Secondary',
+        'High School',
+        'Diploma',
+        'Associate Degree',
+        'Bachelor',
+        'Master',
+        'PhD'
+    ]
 
     # تبدیل به فرمت مناسب برای نمودار
     chart_data = {
@@ -393,19 +395,11 @@ def register_stats(
             }]
         },
         'educationLevelStats': {
-            'labels': filtered_keys,
+            'labels': education_levels,
             'datasets': [{
                 'label': 'تعداد رجیسترها بر اساس سطح تحصیلات',
-                'data': [education_level_counts[key] for key in filtered_keys],
+                'data':  [education_level_counts.get(key, 0) for key in education_levels],
                 'backgroundColor': '#2196F3'
-            }]
-        },
-        'numberGoodStats': {
-            'labels': list(number_good_counts.keys()),
-            'datasets': [{
-                'label': 'تعداد رجیسترها بر اساس مقدار کمک',
-                'data': list(number_good_counts.values()),
-                'backgroundColor': '#FF9800'
             }]
         },
         'typeGoodStats': {
