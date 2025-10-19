@@ -77,6 +77,7 @@ def signup_register(
             for good in goods_data:
                 good["GivenToWhome"] = register.RegisterID
                 good["UpdatedDate"] = datetime.now(timezone.utc)
+                good["GivenBy"] = register.UnderWhichAdmin
                 good_obj = Good(**good)
                 db.add(good_obj)
             db.commit()
