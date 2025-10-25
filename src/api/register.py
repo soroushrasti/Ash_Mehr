@@ -36,9 +36,13 @@ def signup_register(
     if not user_data:
         raise HTTPException(status_code=400, detail="Payload required")
     if user_data.Phone is not None and user_data.Phone != "":
-        rregister: Register = db.query(Register).filter(Register.Phone == user_data.Phone).first()
-        if rregister is not None:
-            raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
+        normalized_user_phone = _normalize_digit_string(user_data.Phone)
+        all_registers = db.query(Register).all()
+        for register in all_registers:
+            if register.Phone:
+                normalized_db_phone = _normalize_digit_string(register.Phone)
+                if normalized_user_phone == normalized_db_phone:
+                    raise HTTPException(status_code=409, detail="مددجو با این شماره تلفن قبلا ثبت نام کرده است")
 
     payload = user_data.dict()
     children_data = payload.pop("children_of_registre", None)
