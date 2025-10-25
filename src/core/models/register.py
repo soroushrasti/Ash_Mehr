@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, Text, DateTime, Date
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
-from pydantic import create_model, ConfigDict, field_validator
+from pydantic import field_validator
 
 
 def info_register(db_session):
@@ -19,7 +19,6 @@ def info_register(db_session):
             last_needy_person.CreatedDate: last_needy_person.CreatedDate,
         } if last_needy_person else None
     }
-
 
 class Register(Base):
     __tablename__ = "register"
@@ -75,7 +74,7 @@ class Register(Base):
             _uwa = UnderWhichAdmin.strip()
             self.UnderWhichAdmin = int(_uwa) if _uwa else None
         else:
-            self.UnderSecondAdminID = UnderSecondAdminID
+            self.UnderWhichAdmin = UnderWhichAdmin
         if isinstance(UnderSecondAdminID, str):
               _usa = UnderSecondAdminID.strip()
               self.UnderSecondAdminID = int(_usa) if _usa else None
@@ -265,11 +264,4 @@ class RegisterCreateBase(RegisterCreate):
                 return int(v_norm)
         return v
 
-# Rebuild RegisterCreateWithChildren using patched bases
-RegisterCreateWithChildren = create_model(
-    "RegisterCreateWithChildren",
-    __base__=RegisterCreateBase,
-    children_of_registre=(Optional[list[ChildrenOfRegisterCreatePatched]], None),
-    BirthDate=(Optional[date | str], None),
-    UnderWhichAdmin=(Optional[int | str], None),
-)
+
