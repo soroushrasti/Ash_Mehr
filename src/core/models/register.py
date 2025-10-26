@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import Optional, List
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Text, DateTime, Date
+from sqlalchemy import ForeignKey, Text, DateTime, Date, Boolean
 from sqlalchemy.sql import func
 from src.core.models import sqlalchemy_model_to_pydantic
 from src.core.models import Base
@@ -49,11 +49,12 @@ class Register(Base):
     children_of_reg: Mapped[List["ChildrenOfRegister"]] = relationship("ChildrenOfRegister", back_populates="register")
     Latitude: Mapped[Optional[str]] = mapped_column(Text)
     Longitude: Mapped[Optional[str]] = mapped_column(Text)
+    is_disconnected: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     def __init__(self, FirstName: Optional[str] = None, LastName: Optional[str] = None, Phone: Optional[str] = None, Email: Optional[str] = None, City: Optional[str] = None, Province: Optional[str] = None, Street: Optional[str] = None,
                  NameFather: Optional[str] = None, NationalID: Optional[str] = None, CreatedBy: Optional[int] = None, BirthDate: Optional[date] = None, UnderWhichAdmin: Optional[int] = None, Region: Optional[str] = None, Gender: Optional[str] = None,
                  HusbandFirstName: Optional[str] = None, HusbandLastName: Optional[str] = None, ReasonMissingHusband: Optional[str] = None, UnderOrganizationName: Optional[str] = None,
-                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, UnderSecondAdminID: Optional[int] = None):
+                 EducationLevel: Optional[str] = None, IncomeForm: Optional[str] = None, Latitude: Optional[str] = None, Longitude: Optional[str] = None, UnderSecondAdminID: Optional[int] = None , is_disconnected: Optional[bool] = False) -> None:
         self.FirstName = FirstName
         self.LastName = LastName
         self.Phone = Phone
@@ -91,6 +92,7 @@ class Register(Base):
         self.Latitude = Latitude
         self.Longitude = Longitude
         self.NameFather = NameFather
+        self.is_disconnected = is_disconnected
 
     def create_register(self, db_session):
         db_session.add(self)
@@ -164,6 +166,8 @@ class Register(Base):
             self.Latitude = user_data.Latitude
         if user_data.Longitude is not None:
             self.Longitude = user_data.Longitude
+        if user_data.is_disconnected is not None:
+            self.is_disconnected = user_data.is_disconnected
         db_session.commit()
         db_session.refresh(self)
         return self
