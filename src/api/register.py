@@ -77,19 +77,21 @@ def signup_register(
             raise HTTPException(status_code=500, detail="خطا در ثبت فرزندان")
 
     if goods_data:
+        ## get an admin_id
+        admin_id = db.query(Admin.AdminID).first()[0]
         try:
             for good in goods_data:
                 good["GivenToWhome"] = register.RegisterID
                 good["UpdatedDate"] = datetime.now(timezone.utc)
-                good["GivenBy"] = register.UnderWhichAdmin
+                good["GivenBy"] = register.UnderWhichAdmin if register.UnderWhichAdmin else admin_id
                 good_obj = Good(**good)
                 db.add(good_obj)
             db.commit()
 
         except Exception as e:
             db.rollback()
+            print(f"Error in goods registration: {str(e)}")  # Move print before raise
             raise HTTPException(status_code=500, detail=  "خطا در ثبت کمک ها")
-            print(str(e))
 
     return register
 

@@ -97,8 +97,6 @@ class LoggingMiddleware:
 
         # Log response
         logger.info(f"RESPONSE | {method} {path} | Status: {response_status} | Time: {process_time:.3f}s")
-        if response_payload:
-            logger.info(f"RESPONSE PAYLOAD | {json.dumps(response_payload, indent=2, default=str)}")
         logger.info("=" * 80)
 
 
