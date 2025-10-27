@@ -205,7 +205,7 @@ def find_needy(
     lat_expr = cast(func.trim(Register.Latitude), Float).label("lat")
     lng_expr = cast(func.trim(Register.Longitude), Float).label("lng")
 
-    query_disconnected = (
+    query = (
         db.query(
             Register.RegisterID.label("id"),
             lat_expr,
@@ -220,46 +220,94 @@ def find_needy(
             Register.Latitude != "",
             Register.Longitude.isnot(None),
             Register.Longitude != "",
-            Register.is_disconnected == 1
-        )
-    )
-    query_connected = (
-        db.query(
-            Register.RegisterID.label("id"),
-            lat_expr,
-            lng_expr,
-            needy_name_expr,
-            group_name_expr,
-            info_expr,
-            Register.Phone.label('phone')
-        ).join(Admin, Admin.AdminID == Register.UnderWhichAdmin, isouter=True)
-        .filter(
-            Register.Latitude.isnot(None),
-            Register.Latitude != "",
-            Register.Longitude.isnot(None),
-            Register.Longitude != "",
-            Register.is_disconnected == 0
+            Register.is_disconnected == False
         )
     )
 
     if is_pg:
         # Filter numeric values using Postgres regex to avoid cast errors
-        query_disconnected = query_disconnected.filter(
-            Register.Latitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-            Register.Longitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
-        )
-        query_connected = query_connected.filter(
+        query = query.filter(
             Register.Latitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
             Register.Longitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
         )
 
-    disconnected_rows = db.execute(query_disconnected.statement).mappings().all()
-    connected_rows = db.execute(query_connected.statement).mappings().all()
+    rows = db.execute(query.statement).mappings().all()
+    return rows
 
-    return {
-        'disconnected_rows': disconnected_rows,
-        'connected_rows': connected_rows,
-    }
+@router.get("/find-disconnected-needy")
+def find_needy(
+        db: Session = Depends(create_session)
+):
+    bind = db.get_bind()
+    is_pg = bind.dialect.name == "postgresql"
+
+    needy_name_expr = func.nullif(
+        func.trim(
+            func.concat(
+                func.coalesce(Register.FirstName, ""),
+                literal(" "),
+                func.coalesce(Register.LastName, ""),
+            )
+        ),
+        "",
+    ).label("name")
+
+    group_name_expr = func.nullif(
+        func.trim(
+            func.concat(
+                func.coalesce(Admin.FirstName, ""),
+                literal(" "),
+                func.coalesce(Admin.LastName, ""),
+                literal(" "),
+                func.coalesce(Admin.City, ""),
+            )
+        ),
+        "",
+    ).label("group_name")
+
+    info_expr = func.nullif(
+        func.trim(
+            func.concat(
+                func.coalesce(Register.Street, ""),
+                literal(" "),
+                func.coalesce(Register.City, ""),
+            )
+        ),
+        "",
+    ).label("info")
+
+    lat_expr = cast(func.trim(Register.Latitude), Float).label("lat")
+    lng_expr = cast(func.trim(Register.Longitude), Float).label("lng")
+
+    query = (
+        db.query(
+            Register.RegisterID.label("id"),
+            lat_expr,
+            lng_expr,
+            needy_name_expr,
+            group_name_expr,
+            info_expr,
+            Register.Phone.label('phone')
+        ).join(Admin, Admin.AdminID == Register.UnderWhichAdmin, isouter=True)
+        .filter(
+            Register.Latitude.isnot(None),
+            Register.Latitude != "",
+            Register.Longitude.isnot(None),
+            Register.Longitude != "",
+            Register.is_disconnected == True
+        )
+    )
+
+    if is_pg:
+        # Filter numeric values using Postgres regex to avoid cast errors
+        query = query.filter(
+            Register.Latitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
+            Register.Longitude.op("~")(r"^\s*[+-]?\d+(\.\d+)?\s*$"),
+        )
+
+    disconnected_rows = db.execute(query.statement).mappings().all()
+    return disconnected_rows
+
 
 # stattistic of needy people
 @router.get("/info-needy")
