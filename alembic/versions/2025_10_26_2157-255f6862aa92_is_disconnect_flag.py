@@ -19,7 +19,7 @@ depends_on = None
 def upgrade():
     # اضافه کردن ستون is_disconnected به جدول register
     with op.batch_alter_table('register') as batch_op:
-        batch_op.add_column(sa.Column('is_disconnected', sa.Boolean(), nullable=False, server_default='false'))
+        batch_op.add_column(sa.Column('is_disconnected', sa.Boolean(), nullable=False, server_default=sa.text('0')))
 
 
 def downgrade():
