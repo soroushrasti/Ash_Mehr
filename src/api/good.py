@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
-
+import random
+import requests
+import json
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Union
@@ -128,3 +130,113 @@ def add_good(
     db.commit()
     db.refresh(good)
     return good
+
+def send_sms_service(phone_number, sms_code):
+    username = " "  # نام کاربری اسان‌پیک
+    password = " "  # رمز عبور اسان‌پیک
+    sender_number = 3000  # شماره سرویس‌دهنده
+
+    message = sms_code
+    # URL API اسان‌پیک
+    url = "https://panel.asanak.com/webservice/v1rest/sendsms"
+    # داده‌های درخواست
+    data = {
+        'username': username,
+        'password': password,
+        'source': sender_number,
+        'destination': phone_number,
+        'message': message
+    }
+    try:
+        # ارسال درخواست POST
+        response = requests.post(url, data=data, timeout=30)
+
+        # بررسی وضعیت پاسخ
+        if response.status_code == 200:
+            result = response.json()
+
+            # بررسی موفقیت‌آمیز بودن ارسال
+            if result.get('status') == 'ok':
+                return {
+                    'success': True,
+                    'message': 'پیامک با موفقیت ارسال شد',
+                    'message_id': result.get('messageid'),
+                    'status': result.get('status')
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': 'خطا در ارسال پیامک',
+                    'error': result.get('message', 'خطای ناشناخته'),
+                    'status': result.get('status')
+                }
+        else:
+            return {
+                'success': False,
+                'message': 'خطا در ارتباط با سرور',
+                'status_code': response.status_code,
+                'error': response.text
+            }
+
+    except requests.exceptions.Timeout:
+        return {
+            'success': False,
+            'message': 'اتصال به سرور زمان‌بر شد',
+            'error': 'timeout'
+        }
+
+    except requests.exceptions.ConnectionError:
+        return {
+            'success': False,
+            'message': 'خطا در اتصال به اینترنت',
+            'error': 'connection_error'
+        }
+
+    except requests.exceptions.RequestException as e:
+        return {
+            'success': False,
+            'message': 'خطا در ارسال درخواست',
+            'error': str(e)
+        }
+
+    except Exception as e:
+        return {
+            'success': False,
+            'message': 'خطای ناشناخته',
+            'error': str(e)
+        }
+
+@router.post("/send-sms/{phone_number}/{good_id}")
+def send_sms(
+        good_id: int,
+        phone_number: str,
+        db: Session = Depends(create_session),
+):
+    sms_code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    # send_sms_service(phone_number, {sms_code})
+
+    good = db.query(Good).filter(Good.GoodID == good_id).first()
+    if good:
+        good.SmsCode = sms_code
+        db.add(good)
+        db.commit()
+    else:
+        raise HTTPException(status_code=404, detail="کمک پیدا نشد")
+    return {"success": True, "message": "پیامک ارسال شد"}
+
+@router.post("/verify-sms/{sms_code}/{good_id}")
+def verify_sms(
+        good_id: int,
+        sms_code: str,
+        db: Session = Depends(create_session)
+):
+    good = db.query(Good). filter(Good.GoodID == good_id).first()
+    if good is None:
+        raise HTTPException(status_code=404, detail="کالا پیدا نشد")
+    if good.SmsCode == sms_code:
+        good.Verified = True
+        db.add(good)
+        db.commit()
+        return {"success": True, "message": " کد تایید شد"}
+    else:
+        return {"success": False, "message": "کد نامعتبر است"}
