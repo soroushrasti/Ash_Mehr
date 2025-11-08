@@ -8,6 +8,7 @@ from sqlalchemy import func, literal, case, cast, Float
 from src.api import router
 from src.config.database import create_session
 from src.core.models.admin import Admin, AdminCreate, AdminOut, UserRoleEnum
+from src.core.models.good import Good
 from src.core.models.register import Register, RegisterCreate
 
 
@@ -44,6 +45,8 @@ def delete_admin(
         db: Session = Depends(create_session)
 ):
     ### check if register with this CreatedbyWhom if that id exists
+    db.query(Good).filter(Good.GivenBy == admin_id).delete()
+
     registers = db.query(Register).filter(Register.UnderWhichAdmin == admin_id).all()
     if registers:
         raise HTTPException(status_code=400, detail="ابتدا باید مددجویان زیر نظر این نماینده حذف شوند")
