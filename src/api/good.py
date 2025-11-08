@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 import random
+from warnings import catch_warnings
+
 import requests
 import json
 from fastapi import Body, Depends, HTTPException
@@ -230,13 +232,15 @@ def verify_sms(
         sms_code: str,
         db: Session = Depends(create_session)
 ):
-    good = db.query(Good). filter(Good.GoodID == good_id).first()
-    if good is None:
-        raise HTTPException(status_code=404, detail="کالا پیدا نشد")
-    if good.SmsCode == sms_code:
-        good.Verified = True
-        db.add(good)
-        db.commit()
-        return {"success": True, "message": " کد تایید شد"}
-    else:
-        return {"success": False, "message": "کد نامعتبر است"}
+        good = db.query(Good).filter(Good.GoodID == good_id).first()
+        if good is None:
+            raise HTTPException(status_code=404, detail="کالا پیدا نشد")
+        if good.SmsCode == sms_code:
+            good.Verified = True
+            db.add(good)
+            db.commit()
+            return True
+        else:
+           return False
+
+
