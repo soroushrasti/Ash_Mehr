@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-
+import re
+import unicodedata
 from fastapi import Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, List, Counter
@@ -377,11 +378,28 @@ def signin_needy(
         "name": name,
     }
 
-
 @router.get("/register-stats")
 def register_stats(
         db: Session = Depends(create_session)
 ):
+    def normalize_label(s):
+        if not s:
+            return ''
+        # نرمال‌سازی یونیکد
+        s = unicodedata.normalize('NFKC', s)
+        # تبدیل حروف عربی به معادل فارسی
+        s = s.replace('ي', 'ی').replace('ك', 'ک')
+        # تبدیل NBSP و سایر فضاهای نامرئی به فاصله معمولی
+        s = s.replace('\u00A0', ' ').replace('\u200c', ' ')
+        # جایگزینی کاماها و انواع خط‌کِش با یک فاصله
+        # شامل: , و کامای فارسی '،' و hyphen و en-dash و em-dash و دیگر Varianten
+        s = re.sub(r'[,،\-\u2010-\u2015]+', ' ', s)
+        # حذف سایر علائم نقطه‌گذاری اگر خواستی (اختیاری)
+        # s = re.sub(r'[.:;()«»"\']+', '', s)
+        # فشرده‌سازی فاصلهٔ داخلی و حذف فاصلهٔ اول/آخر
+        s = re.sub(r'\s+', ' ', s).strip()
+        return s
+
     # گرفتن تمام رجیسترها از دیتابیس
     registers = db.query(Register).all()
 
@@ -402,7 +420,7 @@ def register_stats(
     admin_counts = {row.admin_name.strip() or f"Admin {idx}": row.count for idx, row in enumerate(admin_counts_query, 1)}
 
     # شمارش تعداد رجیسترها بر اساس استان
-    province_counts = Counter(register.Province for register in registers)
+    province_counts = Counter(normalize_label(r.Province) for r in registers if normalize_label(r.Province))
     # شمارش تعداد رجیسترها بر اساس سطح تحصیلات
     education_level_counts = Counter(register.EducationLevel for register in registers)
 
@@ -413,6 +431,12 @@ def register_stats(
         .group_by(Good.TypeGood)
         .all()
     )
+
+    normalized_counts = Counter()
+    for typegood, cnt in type_good_counts.items():
+        norm = normalize_label(typegood)
+        if norm:  # یا شرطِ دیگری برای فیلتر کردن مقدارهای خالی
+            normalized_counts[norm] += cnt
 
     ## x  number of children counts unique until max children we have for a registerID 0,1,2,3,4
     ##  y number of register with that number of children
@@ -486,10 +510,10 @@ def register_stats(
             }]
         },
         'typeGoodStats': {
-            'labels': list(type_good_counts.keys()),
+            'labels': list(normalized_counts.keys()),
             'datasets': [{
                 'label': 'تعداد رجیسترها بر اساس نوع کمک',
-                'data': list(type_good_counts.values()),
+                'data': list(normalized_counts.values()),
                 'backgroundColor': '#9C27B0'
             }]
         },
