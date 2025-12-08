@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, DateTime, ForeignKey
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.sql import func
 from src.core.models import Base, sqlalchemy_model_to_pydantic, sqlalchemy_model_to_pydantic_named
 from datetime import datetime
@@ -21,9 +21,11 @@ class Good(Base):
     # Relationships (optional, for ORM navigation)
     admin: Mapped[Admin] = relationship("Admin")
     register: Mapped[Register] = relationship("Register")
+    SmsCode : Mapped[Optional[str]] = mapped_column(String, index=True)
+    Verified: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
 
     ### create __init__ method to create an good
-    def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None, UpdatedDate: Optional[datetime] = None):
+    def __init__(self, TypeGood: Optional[str] = None, NumberGood: Optional[int] = None, GivenToWhome: Optional[int] = None, GivenBy: Optional[int] = None, UpdatedDate: Optional[datetime] = None, SmsCode: Optional[str] = None, Verified: Optional[bool] = None):
         self.TypeGood = TypeGood
         self.UpdatedDate = UpdatedDate
         if isinstance(NumberGood, str):
@@ -44,6 +46,10 @@ class Good(Base):
             self.GivenBy = int(_gb) if _gb else None
         else:
             self.GivenBy = GivenBy
+        if SmsCode:
+            self.SmsCode = SmsCode
+        if Verified:
+            self.Verified = Verified
 
     def edit_good(self, db_session, user_data):
         if user_data.TypeGood is not None:
@@ -54,6 +60,10 @@ class Good(Base):
             self.GivenToWhome = user_data.GivenToWhome
         if user_data.GivenBy is not None:
             self.GivenBy = user_data.GivenBy
+        if user_data.SmsCode is not None:
+            self.SmsCode = user_data.SmsCode
+        if user_data.verified is not None:
+            self.Verified = user_data.Verified
         db_session.commit()
         db_session.refresh(self)
         return self
